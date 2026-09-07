@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentImage, setCurrentImage] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const galleryRef = useRef(null);
 
   const slides = [
     { bg: '/photo1.jpg', title: 'Povestea voastră în fiecare cadru' },
@@ -23,7 +23,6 @@ export default function Home() {
     { src: '/photo5.jpg', alt: 'Nuntă 5', full: '/photo5.jpg' },
   ];
 
-  // Слайдер
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -31,7 +30,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Анимации появления
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -43,12 +41,10 @@ export default function Home() {
       },
       { threshold: 0.1 }
     );
-
     document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 
-  // Лайтбокс
   function openLightbox(index) {
     setCurrentImage(index);
     setLightboxOpen(true);
@@ -66,7 +62,6 @@ export default function Home() {
     setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
   }
 
-  // Клавиатура для лайтбокса
   useEffect(() => {
     const handleKey = (e) => {
       if (!lightboxOpen) return;
@@ -78,7 +73,6 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [lightboxOpen]);
 
-  // Свайпы
   let touchStartX = 0;
 
   function handleTouchStart(e) {
@@ -96,7 +90,7 @@ export default function Home() {
       {/* Навигация */}
       <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-white/95 backdrop-blur border-b border-gray-100">
         <a href="#" className="flex items-center">
-          <img src="/logo.png" alt="Creative Studio" className="h-10 w-auto" />
+          <Image src="/logo.png" alt="Creative Studio" width={150} height={50} className="h-10 w-auto" priority />
         </a>
         <ul className={`flex gap-8 list-none ${menuOpen ? 'max-md:flex-col max-md:absolute max-md:top-16 max-md:right-0 max-md:bg-white max-md:p-8 max-md:shadow-lg max-md:rounded-b-xl' : 'max-md:hidden'}`}>
           <li><a href="#despre" onClick={() => setMenuOpen(false)} className="text-sm uppercase tracking-wide text-gray-500 hover:text-blue-500">Despre</a></li>
@@ -111,8 +105,8 @@ export default function Home() {
         </button>
       </nav>
 
-      {/* Hero Слайдер */}
-      <section className="relative h-screen overflow-hidden">
+      {/* Hero Слайдер - уменьшили высоту */}
+      <section className="relative h-[80vh] overflow-hidden">
         {slides.map((slide, i) => (
           <div
             key={i}
@@ -126,7 +120,6 @@ export default function Home() {
             </div>
           </div>
         ))}
-        {/* Точки слайдера */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3 z-10">
           {slides.map((_, i) => (
             <button
@@ -149,14 +142,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Galerie */}
+      {/* Galerie - исправлена опечатка cursor-pointer, использован next/image */}
       <section id="galerie" className="py-20 px-6 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 reveal">Galerie</h2>
         <p className="text-gray-500 mb-12 reveal">Cele mai frumoase momente surprinse</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {images.map((img, i) => (
-            <div key={i} className="relative overflow-hidden rounded-xl cursor-ponter group reveal" onClick={() => openLightbox(i)}>
-              <img src={img.src} alt={img.alt} className="w-full h-64 object-cover transition duration-500 group-hover:scale-105" />
+            <div key={i} className="relative overflow-hidden rounded-xl cursor-pointer group reveal" onClick={() => openLightbox(i)}>
+              <Image src={img.src} alt={img.alt} width={600} height={400} className="w-full h-48 object-cover transition duration-500 group-hover:scale-105" />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center">
                 <span className="text-white text-sm uppercase tracking-wider">Vezi</span>
               </div>
@@ -233,11 +226,11 @@ export default function Home() {
         </p>
       </footer>
 
-      {/* Лайтбокс */}
+      {/* Лайтбокс с next/image */}
       {lightboxOpen && (
         <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center" onClick={closeLightbox}>
           <button className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white/20 hover:bg-white/50 text-white text-3xl p-3 rounded-full" onClick={(e) => { e.stopPropagation(); prevImage(); }}>‹</button>
-          <img src={images[currentImage].full} alt={images[currentImage].alt} className="max-w-[95%] max-h-[95%] rounded-lg" onClick={(e) => e.stopPropagation()} />
+          <Image src={images[currentImage].full} alt={images[currentImage].alt} width={1200} height={800} className="max-w-[95%] max-h-[95%] rounded-lg" onClick={(e) => e.stopPropagation()} />
           <button className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white/20 hover:bg-white/50 text-white text-3xl p-3 rounded-full" onClick={(e) => { e.stopPropagation(); nextImage(); }}>›</button>
         </div>
       )}
