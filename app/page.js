@@ -2,20 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { supabase } from '../lib/supabase';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentImage, setCurrentImage] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [images, setImages] = useState([]);
 
-  const slides = [
-    { bg: '/photo1.jpg', title: 'Povestea voastră în fiecare cadru' },
-    { bg: '/photo2.jpg', title: 'Momente unice, capturate cu eleganță' },
-    { bg: '/photo3.jpg', title: 'Emoții transformate în artă' },
-  ];
-
-  const images = [
+  const fallbackImages = [
     { src: '/photo1.jpg', alt: 'Nuntă 1', full: '/photo1.jpg' },
     { src: '/photo2.jpg', alt: 'Nuntă 2', full: '/photo2.jpg' },
     { src: '/photo3.jpg', alt: 'Nuntă 3', full: '/photo3.jpg' },
@@ -23,26 +23,61 @@ export default function Home() {
     { src: '/photo5.jpg', alt: 'Nuntă 5', full: '/photo5.jpg' },
   ];
 
+  const slides = [
+    { bg: '/photo1.jpg', title: 'Povestea voastră în fiecare cadru' },
+    { bg: '/photo2.jpg', title: 'Momente unice, capturate cu eleganță' },
+    { bg: '/photo3.jpg', title: 'Emoții transformate în artă' },
+  ];
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      const { data, error } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.error(error);
+        setImages(fallbackImages);
+      } else {
+        if (data && data.length > 0) {
+          const mapped = data.map(item => ({
+            src: item.image_url,
+            alt: item.caption || 'Nuntă',
+            full: item.image_url
+          }));
+          setImages(mapped);
+        } else {
+          setImages(fallbackImages);
+        }
+      }
+    };
+    fetchImages();
+  }, []);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.utils.toArray('.reveal').forEach((el) => {
+        gsap.fromTo(el,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 85%',
+              toggleActions: 'play none none none',
+            }
+          }
+        );
+      });
+    });
+    return () => ctx.revert();
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
   }, []);
 
   function openLightbox(index) {
@@ -74,11 +109,9 @@ export default function Home() {
   }, [lightboxOpen]);
 
   let touchStartX = 0;
-
   function handleTouchStart(e) {
     touchStartX = e.changedTouches[0].screenX;
   }
-
   function handleTouchEnd(e) {
     const touchEndX = e.changedTouches[0].screenX;
     if (touchStartX - touchEndX > 50) nextImage();
@@ -87,7 +120,6 @@ export default function Home() {
 
   return (
     <main>
-      {/* Навигация */}
       <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-white/95 backdrop-blur border-b border-gray-100">
         <a href="#" className="flex items-center">
           <Image src="/logo.png" alt="Creative Studio" width={150} height={50} className="h-10 w-auto" priority />
@@ -105,14 +137,9 @@ export default function Home() {
         </button>
       </nav>
 
-      {/* Hero Слайдер - уменьшили высоту */}
       <section className="relative h-[80vh] overflow-hidden">
         {slides.map((slide, i) => (
-          <div
-            key={i}
-            className={`absolute inset-0 transition-opacity duration-1000 ${i === currentSlide ? 'opacity-100' : 'opacity-0'}`}
-            style={{ backgroundImage: `url(${slide.bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-          >
+          <div key={i} className={`absolute inset-0 transition-opacity duration-1000 ${i === currentSlide ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundImage: `url(${slide.bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
             <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/50"></div>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4">
               <h1 className="text-4xl md:text-6xl font-bold mb-4">{slide.title}</h1>
@@ -122,16 +149,11 @@ export default function Home() {
         ))}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3 z-10">
           {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentSlide(i)}
-              className={`w-3 h-3 rounded-full ${i === currentSlide ? 'bg-blue-500' : 'bg-white/60'}`}
-            />
+            <button key={i} onClick={() => setCurrentSlide(i)} className={`w-3 h-3 rounded-full ${i === currentSlide ? 'bg-blue-500' : 'bg-white/60'}`} />
           ))}
         </div>
       </section>
 
-      {/* Despre */}
       <section id="despre" className="py-20 px-6 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 reveal">Despre noi</h2>
         <p className="text-gray-500 mb-12 reveal">De peste 5 ani creăm amintiri de neuitat pentru cupluri din Moldova și România.</p>
@@ -142,7 +164,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Galerie - исправлена опечатка cursor-pointer, использован next/image */}
       <section id="galerie" className="py-20 px-6 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 reveal">Galerie</h2>
         <p className="text-gray-500 mb-12 reveal">Cele mai frumoase momente surprinse</p>
@@ -158,7 +179,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Servicii */}
       <section id="servicii" className="py-20 px-6 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 reveal">Servicii</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
@@ -195,7 +215,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Contact */}
       <section id="contact" className="py-20 px-6 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 reveal">Contactează-ne</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mt-8">
@@ -216,17 +235,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-gray-50 py-8 text-center text-gray-500">
         <p>© 2026 Creative Studio. Toate drepturile rezervate.</p>
         <p className="mt-2">
-          <a href="#" className="text-blue-500 hover:underline">Instagram</a> | 
-          <a href="#" className="text-blue-500 hover:underline">Facebook</a> | 
-          <a href="tel:+37360000000" className="text-blue-500 hover:underline">+373 60 000 000</a>
+          <a href="#" className="text-blue-500 hover:underline">Instagram</a> | <a href="#" className="text-blue-500 hover:underline">Facebook</a> | <a href="tel:+37360000000" className="text-blue-500 hover:underline">+373 60 000 000</a>
         </p>
       </footer>
 
-      {/* Лайтбокс с next/image */}
       {lightboxOpen && (
         <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center" onClick={closeLightbox}>
           <button className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white/20 hover:bg-white/50 text-white text-3xl p-3 rounded-full" onClick={(e) => { e.stopPropagation(); prevImage(); }}>‹</button>
