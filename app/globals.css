@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --blue: #4A90E2;
+  --black: #1E1E1E;
+  --gray: #555;
+}
+
+body {
+  background: #fff;
+  color: var(--black);
+  overflow-x: hidden;
+}
+
+/* Премиальный скроллбар */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f9f9f9; }
+::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 10px; }
+
+/* Плавные анимации появления */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
