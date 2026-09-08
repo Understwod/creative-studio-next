@@ -7,12 +7,17 @@ export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [weddings, setWeddings] = useState([]);
-  const [selectedWedding, setSelectedWedding] = useState(null); // ID выбранной свадьбы
+  const [selectedWedding, setSelectedWedding] = useState(null);
+  
+  // Состояния для создания свадьбы
+  const [title, setTitle] = useState('');
+  const [coverFile, setCoverFile] = useState(null);
+
+  // Состояния для загрузки фото
   const [file, setFile] = useState(null);
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Проверка входа (пароль secret123)
   useEffect(() => {
     if (localStorage.getItem('adminAuth') === 'true') setAuthenticated(true);
   }, []);
@@ -27,7 +32,6 @@ export default function AdminPage() {
     }
   };
 
-  // Загрузка списка свадеб
   const loadWeddings = async () => {
     const { data } = await supabase.from('weddings').select('*').order('created_at', { ascending: false });
     setWeddings(data || []);
@@ -37,17 +41,42 @@ export default function AdminPage() {
     if (authenticated) loadWeddings();
   }, [authenticated]);
 
-  // Создание новой свадьбы
+  // Создание новой свадьбы с загрузкой обложки
   const createWedding = async (e) => {
     e.preventDefault();
-    const title = prompt('Numele cuplului (ex: Maria & Ion):');
-    if (!title) return;
-    const cover = prompt('Link către poza de copertă (ex: https://...jpg):');
-    if (!cover) return;
+    if (!title || !coverFile) {
+      alert('Te rugăm să introduci numele și să selectezi o poză de copertă!');
+      return;
+    }
 
-    const { error } = await supabase.from('weddings').insert({ title, cover_image: cover });
-    if (error) alert('Eroare: ' + error.message);
-    else loadWeddings();
+    setLoading(true);
+
+    // 1. Загружаем обложку в Storage
+    const coverFileName = `${Date.now()}_${coverFile.name}`;
+    const { error: uploadError } = await supabase.storage.from('photos').upload(coverFileName, coverFile);
+
+    if (uploadError) {
+      alert('Eroare la încărcarea copertei: ' + uploadError.message);
+      setLoading(false);
+      return;
+    }
+
+    // 2. Получаем публичную ссылку на обложку
+    const { data: urlData } = supabase.storage.from('photos').getPublicUrl(coverFileName);
+    const coverUrl = urlData.publicUrl;
+
+    // 3. Вставляем запись в таблицу weddings
+    const { error: insertError } = await supabase.from('weddings').insert({ title, cover_image: coverUrl });
+
+    if (insertError) {
+      alert('Eroare la crearea nunții: ' + insertError.message);
+    } else {
+      alert('Nunta a fost creată!');
+      setTitle('');
+      setCoverFile(null);
+      loadWeddings();
+    }
+    setLoading(false);
   };
 
   // Загрузка фото в выбранную свадьбу
@@ -100,7 +129,21 @@ export default function AdminPage() {
       </div>
 
       {/* Создание свадьбы */}
-      <button onClick={createWedding} className="bg-green-500 text-white px-6 py-2 rounded-lg mb-6">+ Adaugă Nuntă Nouă</button>
+      <div className="bg-white p-6 rounded-lg shadow mb-8">
+        <h2 className="text-xl font-semibold mb-4">Adaugă Nuntă Nouă</h2>
+        <form onSubmit={createWedding}>
+          <div className="mb-4">
+            <input type="text" placeholder="Numele cuplului (ex: Maria & Ion)" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full p-2 border rounded-lg" required />
+          </div>
+          <div className="mb-4">
+            <label className="block mb-2 text-sm font-medium">Alege poză de copertă</label>
+            <input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files[0])} className="w-full p-2 border rounded-lg" required />
+          </div>
+          <button type="submit" disabled={loading} className="bg-green-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">
+            {loading ? 'Se încarcă...' : '+ Adaugă Nuntă'}
+          </button>
+        </form>
+      </div>
 
       {/* Список свадеб */}
       <h2 className="text-xl font-semibold mb-4">Nunțile existente</h2>
