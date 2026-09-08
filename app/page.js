@@ -237,7 +237,7 @@ export default function Home() {
             &times;
           </button>
           <button className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); prevImage(); }}>‹</button>
-          <img src={photos[currentPhotoIndex].image_url} alt="Fotografie mărită" className="max-w-[90%] max-h-[90%] rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          <img src={photos[currentPhotoIndex].image_url} alt="Fotografie mărită" className="max-w-[95%] max-h-[95%] w-auto h-auto object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
           <button className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); nextImage(); }}>›</button>
         </div>
       )}
