@@ -5,19 +5,20 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
-  // По умолчанию румынский язык
   const [language, setLanguage] = useState('ro');
 
-  // Загружаем сохранённый язык из localStorage при запуске
   useEffect(() => {
     const savedLanguage = localStorage.getItem('language');
-    if (savedLanguage) {
+    // Проверяем, что сохранённый язык поддерживается, иначе ставим RO
+    if (savedLanguage === 'ro' || savedLanguage === 'en') {
       setLanguage(savedLanguage);
+    } else {
+      setLanguage('ro');
     }
   }, []);
 
-  // Функция для изменения языка и сохранения его в localStorage
   const changeLanguage = (lang) => {
+    if (lang !== 'ro' && lang !== 'en') return; // защита от неверных значений
     setLanguage(lang);
     localStorage.setItem('language', lang);
   };

@@ -45,9 +45,8 @@ export default function Home() {
         title: 'Fotograful',
         name: 'Ursachi Igor',
         brand: 'Creative Studio',
+        bio: 'Sunt Igor, fondator al Creative Studio, și de peste un deceniu mă dedic artei fotografice. Cu expertiză în nunți, evenimente private, precum și sesiuni foto personale și de familie, transform fiecare moment într-o poveste vizuală captivantă.',
         location: 'Activează în Chișinău; disponibil să călătorească în întreaga Moldovă și Europa.',
-        phoneLabel: 'Telefon',
-        emailLabel: 'Email',
       },
       services: {
         title: 'Pachete Disponibile',
@@ -63,55 +62,54 @@ export default function Home() {
         subtitle: 'Pentru rezervări și informații suplimentare ne contactați',
       },
     },
-    ru: {
-      nav: { despre: 'О нас', nunti: 'Свадьбы', fotograf: 'Фотограф', servicii: 'Услуги', contact: 'Контакты' },
+    en: {
+      nav: { despre: 'About', nunti: 'Weddings', fotograf: 'Photographer', servicii: 'Services', contact: 'Contact' },
       hero: [
-        { title: 'Ваша история в каждом кадре' },
-        { title: 'Уникальные моменты, запечатленные с элегантностью' },
-        { title: 'Эмоции, превращенные в искусство' },
+        { title: 'Your story in every frame' },
+        { title: 'Unique moments captured with elegance' },
+        { title: 'Emotions turned into art' },
       ],
       despre: {
-        title: 'О нас',
-        subtitle: 'Более 5 лет мы создаем незабываемые воспоминания для пар из Молдовы и Румынии.',
+        title: 'About us',
+        subtitle: 'For over 5 years we have been creating unforgettable memories for couples from Moldova and Romania.',
         stats: [
-          { title: 'Опыт', text: 'Более 300 снятых свадеб' },
-          { title: 'Уникальный стиль', text: 'Светлый, естественный, эмоциональный' },
-          { title: 'Быстрые сроки', text: 'Фотографии готовы через 2 месяца' },
+          { title: 'Experience', text: 'Over 300 weddings filmed' },
+          { title: 'Unique style', text: 'Bright, natural, emotional' },
+          { title: 'Fast turnaround', text: 'Photos ready in 2 months' },
         ],
       },
       weddings: {
-        title: 'Наши свадьбы',
-        subtitle: 'Выберите свадьбу, чтобы увидеть все фотографии',
-        empty: 'Пока не добавлено ни одной свадьбы.',
-        loading: 'Загрузка...',
-        noPhotos: 'В этой свадьбе пока нет фотографий.',
+        title: 'Our weddings',
+        subtitle: 'Choose a wedding to see all photos',
+        empty: 'No weddings added yet.',
+        loading: 'Loading...',
+        noPhotos: 'No photos in this wedding.',
       },
       photographer: {
-        title: 'Фотограф',
-        name: 'Урсаки Игорь',
+        title: 'Photographer',
+        name: 'Ursachi Igor',
         brand: 'Creative Studio',
-        location: 'Работает в Кишиневе; готов путешествовать по всей Молдове и Европе.',
-        phoneLabel: 'Телефон',
-        emailLabel: 'Email',
+        bio: 'I am Igor, founder of Creative Studio, and for over a decade I have been dedicated to the art of photography. With expertise in weddings, private events, as well as personal and family photo sessions, I transform every moment into a captivating visual story.',
+        location: 'Based in Chisinau; available to travel throughout Moldova and Europe.',
       },
       services: {
-        title: 'Доступные пакеты',
-        subtitle: 'Выберите идеальный пакет для вашей свадьбы',
+        title: 'Available packages',
+        subtitle: 'Choose the perfect package for your wedding',
         packages: [
-          { name: 'Essential Story', price: '1.000 €', currency: 'от', features: ['1 профессиональный фотограф', 'Приватная онлайн-галерея', 'Профессиональная обработка JPG', 'Мин. 800 обработанных фото', 'Доставка ссылка + USB', 'Срок сдачи: 5 месяцев'], notIncluded: ['Превью 48ч'] },
-          { name: 'Eternal Story', price: '1.300 €', currency: 'от', features: ['Фотограф + ассистент', 'Превью 48ч', 'Мин. 1.000 обработанных фото', 'Срок сдачи: 3 месяца'], notIncluded: ['Премиум альбом'] },
-          { name: 'Heirloom Story', price: '2.200 €', currency: 'от', features: ['2 фотографа + ассистент', 'Превью 48ч', 'Свадебная фотосессия', 'Премиум альбом включен', 'Мин. 1.200 обработанных фото', 'Срок сдачи: 2 месяца'], notIncluded: [] },
+          { name: 'Essential Story', price: '1.000 €', currency: 'from', features: ['1 professional photographer', 'Private online gallery', 'Professional JPG editing', 'Min. 800 edited photos', 'Delivery link + USB', 'Delivery time: 5 months'], notIncluded: ['48h preview'] },
+          { name: 'Eternal Story', price: '1.300 €', currency: 'from', features: ['Photographer + assistant', '48h preview', 'Min. 1.000 edited photos', 'Delivery time: 3 months'], notIncluded: ['Premium album'] },
+          { name: 'Heirloom Story', price: '2.200 €', currency: 'from', features: ['2 Photographers + assistant', '48h preview', 'After wedding photo session', 'Premium album included', 'Min. 1.200 edited photos', 'Delivery time: 2 months'], notIncluded: [] },
         ],
       },
       contact: {
-        title: 'Свяжитесь с нами',
-        subtitle: 'Для бронирования и дополнительной информации свяжитесь с нами',
+        title: 'Contact us',
+        subtitle: 'For reservations and additional information, contact us',
       },
     },
   };
 
   // Выбираем текущий язык
-  const currentLang = t[language];
+  const currentLang = t[language] || t.ro;
 
   // Слайды для hero (переводим на лету)
   const slides = currentLang.hero.map((item, index) => ({
@@ -207,22 +205,24 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Переключатель языка и бургер справа */}
+            {/* Плавный переключатель языка + бургер справа */}
             <div className="flex-1 flex justify-end items-center gap-4">
-              <div className="hidden md:flex gap-2 text-sm font-medium">
+              {/* Переключатель в виде "пилюли" */}
+              <div className="hidden md:flex items-center bg-gray-100 rounded-full p-1 transition-all duration-300">
                 <button
                   onClick={() => changeLanguage('ro')}
-                  className={`px-2 py-1 rounded ${language === 'ro' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-blue-500'}`}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${language === 'ro' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}
                 >
                   RO
                 </button>
                 <button
-                  onClick={() => changeLanguage('ru')}
-                  className={`px-2 py-1 rounded ${language === 'ru' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-blue-500'}`}
+                  onClick={() => changeLanguage('en')}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${language === 'en' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}
                 >
-                  RU
+                  EN
                 </button>
               </div>
+
               <button onClick={() => setMenuOpen(true)} className="md:hidden p-2 rounded-md text-gray-900 hover:text-blue-600">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -253,20 +253,23 @@ export default function Home() {
               <li><a href="#servicii" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">{currentLang.nav.servicii}</a></li>
               <li><a href="#contact" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">{currentLang.nav.contact}</a></li>
             </ul>
+
             {/* Переключатель языка в мобильном меню */}
             <div className="flex justify-center gap-4 mt-8">
-              <button
-                onClick={() => changeLanguage('ro')}
-                className={`px-4 py-2 rounded-full text-sm font-semibold ${language === 'ro' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-              >
-                RO
-              </button>
-              <button
-                onClick={() => changeLanguage('ru')}
-                className={`px-4 py-2 rounded-full text-sm font-semibold ${language === 'ru' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-              >
-                RU
-              </button>
+              <div className="flex items-center bg-gray-100 rounded-full p-1">
+                <button
+                  onClick={() => changeLanguage('ro')}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${language === 'ro' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  RO
+                </button>
+                <button
+                  onClick={() => changeLanguage('en')}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${language === 'en' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  EN
+                </button>
+              </div>
             </div>
           </div>
         </div>
