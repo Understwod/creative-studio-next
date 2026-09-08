@@ -36,7 +36,7 @@ export default function Home() {
     tiktok: 'https://www.tiktok.com/@creativestudiomoldova',
   };
 
-  // Загрузка свадеб
+  // Загружаем свадьбы (только не скрытые)
   useEffect(() => {
     const fetchWeddings = async () => {
       const { data } = await supabase.from('weddings').select('*').eq('is_hidden', false).order('created_at', { ascending: false });
@@ -45,7 +45,7 @@ export default function Home() {
     fetchWeddings();
   }, []);
 
-  // Плавные анимации (оптимизированные)
+  // Плавные анимации
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.utils.toArray('.reveal').forEach((el) => {
@@ -58,6 +58,7 @@ export default function Home() {
         );
       });
 
+      // Параллакс только на десктопе
       if (window.innerWidth > 768) {
         gsap.to('.hero-bg', {
           yPercent: 10,
@@ -106,6 +107,7 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [lightboxOpen, photos.length]);
 
+  // Открытие свадьбы
   const openWedding = async (id) => {
     setLoadingWedding(true);
     setSelectedWedding(id);
@@ -125,6 +127,7 @@ export default function Home() {
       {/* Навигация */}
       <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-white/95 backdrop-blur border-b border-gray-100">
         <a href="#" className="flex items-center">
+          {/* Логотип - локальный файл, используем next/image */}
           <Image src="/logo.png" alt="Creative Studio" width={150} height={50} className="h-10 w-auto" priority />
         </a>
         <ul className="hidden md:flex gap-8 list-none">
@@ -193,8 +196,15 @@ export default function Home() {
             {weddings.map((w) => (
               <div key={w.id} className="cursor-pointer group wedding-card" onClick={() => openWedding(w.id)}>
                 <div className="relative overflow-hidden rounded-xl shadow-lg">
-                  {/* ИСПРАВЛЕНО: используем обычный <img> для Supabase */}
-                  <img src={w.cover_image} alt={w.title} className="w-full h-64 object-cover transition duration-500 group-hover:scale-110" />
+                  {/* ОБЛОЖКА СВАДЬБЫ - С ИСПОЛЬЗОВАНИЕМ next/image */}
+                  <Image
+                    src={w.cover_image}
+                    alt={w.title}
+                    width={800}
+                    height={600}
+                    className="w-full h-64 object-cover transition duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center">
                     <span className="text-white text-xl font-bold px-4 text-center">{w.title}</span>
                   </div>
@@ -215,8 +225,15 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
             {loadingWedding ? <p className="text-gray-600">Se încarcă...</p> : photos.length === 0 ? <p className="text-gray-600">Nicio fotografie în această nuntă.</p> : photos.map((photo, i) => (
               <div key={photo.id} className="cursor-pointer" onClick={() => openLightbox(i)}>
-                {/* ИСПРАВЛЕНО: используем обычный <img> для Supabase */}
-                <img src={photo.image_url} alt={photo.caption || 'Fotografie'} className="w-full h-48 object-cover rounded-lg shadow-sm" />
+                {/* ФОТО ВНУТРИ СВАДЬБЫ - С ИСПОЛЬЗОВАНИЕМ next/image */}
+                <Image
+                  src={photo.image_url}
+                  alt={photo.caption || 'Fotografie'}
+                  width={600}
+                  height={400}
+                  className="w-full h-48 object-cover rounded-lg shadow-sm"
+                  loading="lazy"
+                />
               </div>
             ))}
           </div>
@@ -228,8 +245,15 @@ export default function Home() {
         <div className="fixed inset-0 bg-white z-[9999] flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
           <button className="absolute top-4 right-4 text-black text-4xl hover:text-gray-600 transition z-10" onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}>&times;</button>
           <button className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); prevImage(); }}>‹</button>
-          {/* ИСПРАВЛЕНО: используем обычный <img> для Supabase, чтобы не требовалась настройка домена */}
-          <img src={photos[currentPhotoIndex].image_url} alt={photos[currentPhotoIndex].caption || 'Fotografie mărită'} className="max-w-[95%] max-h-[95%] w-auto h-auto object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          {/* ФОТО В ЛАЙТБОКСЕ - С ИСПОЛЬЗОВАНИЕМ next/image */}
+          <Image
+            src={photos[currentPhotoIndex].image_url}
+            alt={photos[currentPhotoIndex].caption || 'Fotografie mărită'}
+            width={1600}
+            height={1200}
+            className="max-w-[95%] max-h-[95%] w-auto h-auto object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
           <button className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); nextImage(); }}>›</button>
         </div>
       )}
@@ -239,7 +263,8 @@ export default function Home() {
         <h2 className="text-3xl md:text-4xl font-bold mb-8 reveal">Fotograful</h2>
         <div className="flex flex-col md:flex-row items-center justify-center gap-12">
           <div className="w-64 h-64 rounded-full overflow-hidden shadow-lg reveal">
-            <img src="/logo.png" alt={photographer.name} className="w-full h-full object-cover" />
+            {/* ФОТО ФОТОГРАФА - ЛОКАЛЬНОЕ, ИСПОЛЬЗУЕМ next/image */}
+            <Image src="/logo.png" alt={photographer.name} width={256} height={256} className="w-full h-full object-cover" />
           </div>
           <div className="text-left max-w-2xl reveal">
             <h3 className="text-2xl font-bold mb-2">{photographer.name} <span className="text-gray-500 font-normal">| {photographer.brand}</span></h3>
