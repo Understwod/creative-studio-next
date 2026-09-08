@@ -13,8 +13,8 @@ export default function AdminPage() {
   const [title, setTitle] = useState('');
   const [coverFile, setCoverFile] = useState(null);
 
-  // Состояния для загрузки фото
-  const [file, setFile] = useState(null);
+  // Состояния для загрузки нескольких фото
+  const [files, setFiles] = useState([]); // Теперь это массив!
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -41,7 +41,7 @@ export default function AdminPage() {
     if (authenticated) loadWeddings();
   }, [authenticated]);
 
-  // Создание новой свадьбы с загрузкой обложки
+  // Создание новой свадьбы
   const createWedding = async (e) => {
     e.preventDefault();
     if (!title || !coverFile) {
@@ -51,7 +51,6 @@ export default function AdminPage() {
 
     setLoading(true);
 
-    // 1. Загружаем обложку в Storage
     const coverFileName = `${Date.now()}_${coverFile.name}`;
     const { error: uploadError } = await supabase.storage.from('photos').upload(coverFileName, coverFile);
 
@@ -61,11 +60,9 @@ export default function AdminPage() {
       return;
     }
 
-    // 2. Получаем публичную ссылку на обложку
     const { data: urlData } = supabase.storage.from('photos').getPublicUrl(coverFileName);
     const coverUrl = urlData.publicUrl;
 
-    // 3. Вставляем запись в таблицу weddings
     const { error: insertError } = await supabase.from('weddings').insert({ title, cover_image: coverUrl });
 
     if (insertError) {
@@ -79,25 +76,31 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  // Загрузка фото в выбранную свадьбу
-  const uploadPhoto = async (e) => {
+  // Загрузка НЕСКОЛЬКИХ фото в выбранную свадьбу
+  const uploadPhotos = async (e) => {
     e.preventDefault();
-    if (!file || !selectedWedding) return;
+    if (files.length === 0 || !selectedWedding) return;
     setLoading(true);
 
-    const fileName = `${Date.now()}_${file.name}`;
-    const { error: uploadError } = await supabase.storage.from('photos').upload(fileName, file);
-    if (uploadError) { alert(uploadError.message); setLoading(false); return; }
+    // Проходим циклом по каждому выбранному файлу
+    for (const file of files) {
+      const fileName = `${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('photos').upload(fileName, file);
+      if (uploadError) { alert(uploadError.message); setLoading(false); return; }
 
-    const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName);
-    const { error: insertError } = await supabase.from('photos').insert({
-      wedding_id: selectedWedding,
-      image_url: urlData.publicUrl,
-      caption
-    });
+      const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName);
+      const { error: insertError } = await supabase.from('photos').insert({
+        wedding_id: selectedWedding,
+        image_url: urlData.publicUrl,
+        caption: caption || '' // Одну подпись можно применить ко всем сразу
+      });
 
-    if (insertError) alert(insertError.message);
-    else { alert('Foto adăugată!'); setCaption(''); setFile(null); }
+      if (insertError) { alert(insertError.message); setLoading(false); return; }
+    }
+
+    alert('Fotografiile au fost adăugate!');
+    setFiles([]); // Очищаем выбранные файлы
+    setCaption('');
     setLoading(false);
   };
 
@@ -161,14 +164,18 @@ export default function AdminPage() {
       {selectedWedding && (
         <div className="bg-white p-6 rounded-lg shadow mb-8">
           <h3 className="text-lg font-semibold mb-4">Încarcă foto în: {weddings.find(w => w.id === selectedWedding)?.title}</h3>
-          <form onSubmit={uploadPhoto}>
+          <form onSubmit={uploadPhotos}>
             <div className="mb-4">
-              <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} className="w-full p-2 border rounded-lg" required />
+              <label className="block mb-2 text-sm font-medium">Selectează mai multe fotografii (ține apăsat Ctrl sau Shift)</label>
+              {/* ДОБАВЛЕН АТРИБУТ multiple */}
+              <input type="file" accept="image/*" multiple onChange={(e) => setFiles(Array.from(e.target.files))} className="w-full p-2 border rounded-lg" required />
             </div>
             <div className="mb-4">
-              <input type="text" placeholder="Descriere (ex: Primul dans)" value={caption} onChange={(e) => setCaption(e.target.value)} className="w-full p-2 border rounded-lg" />
+              <input type="text" placeholder="Descriere pentru toate (ex: Primul dans)" value={caption} onChange={(e) => setCaption(e.target.value)} className="w-full p-2 border rounded-lg" />
             </div>
-            <button type="submit" disabled={loading} className="bg-blue-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">{loading ? 'Se încarcă...' : 'Adaugă foto'}</button>
+            <button type="submit" disabled={loading} className="bg-blue-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">
+              {loading ? 'Se încarcă...' : 'Adaugă fotografiile'}
+            </button>
           </form>
         </div>
       )}
