@@ -211,15 +211,15 @@ export default function Home() {
 
       {/* Открытая свадьба */}
       {selectedWedding && (
-        <div className="fixed inset-0 bg-black/95 z-[9998] overflow-y-auto">
-          <div className="sticky top-0 bg-black/90 backdrop-blur z-10 flex justify-between items-center p-6">
-            <h2 className="text-2xl font-bold text-white">{weddings.find(w => w.id === selectedWedding)?.title}</h2>
-            <button onClick={closeWedding} className="text-white text-3xl">&times;</button>
+        <div className="fixed inset-0 bg-white z-[9998] overflow-y-auto">
+          <div className="sticky top-0 bg-white/95 backdrop-blur z-10 flex justify-between items-center p-6 border-b border-gray-200">
+            <h2 className="text-2xl font-bold text-black">{weddings.find(w => w.id === selectedWedding)?.title}</h2>
+            <button onClick={closeWedding} className="text-black text-3xl">&times;</button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-            {loadingWedding ? <p className="text-white">Se încarcă...</p> : photos.length === 0 ? <p className="text-white">Nicio fotografie în această nuntă.</p> : photos.map((photo, i) => (
+            {loadingWedding ? <p className="text-gray-600">Se încarcă...</p> : photos.length === 0 ? <p className="text-gray-600">Nicio fotografie în această nuntă.</p> : photos.map((photo, i) => (
               <div key={photo.id} className="cursor-pointer" onClick={() => openLightbox(i)}>
-                <img src={photo.image_url} alt={photo.caption || 'Fotografie'} className="w-full h-48 object-cover rounded-lg" />
+                <img src={photo.image_url} alt={photo.caption || 'Fotografie'} className="w-full h-48 object-cover rounded-lg shadow-sm" />
               </div>
             ))}
           </div>
@@ -228,17 +228,17 @@ export default function Home() {
 
       {/* Лайтбокс с крестиком */}
       {lightboxOpen && (
-        <div className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
+        <div className="fixed inset-0 bg-white z-[9999] flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
           <button 
-            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 transition z-10"
+            className="absolute top-4 right-4 text-black text-4xl hover:text-gray-600 transition z-10"
             onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
             aria-label="Închide"
           >
             &times;
           </button>
-          <button className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white/20 text-white text-3xl p-3 rounded-full" onClick={(e) => { e.stopPropagation(); prevImage(); }}>‹</button>
-          <img src={photos[currentPhotoIndex].image_url} alt="Fotografie mărită" className="max-w-[90%] max-h-[90%] rounded-lg" onClick={(e) => e.stopPropagation()} />
-          <button className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white/20 text-white text-3xl p-3 rounded-full" onClick={(e) => { e.stopPropagation(); nextImage(); }}>›</button>
+          <button className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); prevImage(); }}>‹</button>
+          <img src={photos[currentPhotoIndex].image_url} alt="Fotografie mărită" className="max-w-[90%] max-h-[90%] rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          <button className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); nextImage(); }}>›</button>
         </div>
       )}
 
