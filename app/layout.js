@@ -1,6 +1,6 @@
 import './globals.css';
 import { Inter, Montserrat } from 'next/font/google';
-import LenisProvider from '@/components/LenisProvider';
+import LenisProvider from '../components/LenisProvider';
 
 const inter = Inter({ subsets: ['latin'], weight: ['300', '400', '500'] });
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['600', '700'] });
