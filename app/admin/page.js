@@ -4,21 +4,22 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 
 export default function AdminPage() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [weddings, setWeddings] = useState([]);
+  const [selectedWedding, setSelectedWedding] = useState(null); // ID выбранной свадьбы
   const [file, setFile] = useState(null);
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
-  const [photos, setPhotos] = useState([]);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
 
+  // Проверка входа (пароль secret123)
   useEffect(() => {
-    const auth = localStorage.getItem('adminAuth');
-    if (auth === 'true') setAuthenticated(true);
+    if (localStorage.getItem('adminAuth') === 'true') setAuthenticated(true);
   }, []);
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (password === 'secret123') { // Замените на свой пароль
+    if (password === 'secret123') {
       localStorage.setItem('adminAuth', 'true');
       setAuthenticated(true);
     } else {
@@ -26,48 +27,57 @@ export default function AdminPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('adminAuth');
-    setAuthenticated(false);
-  };
-
-  const loadPhotos = async () => {
-    const { data } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
-    setPhotos(data || []);
+  // Загрузка списка свадеб
+  const loadWeddings = async () => {
+    const { data } = await supabase.from('weddings').select('*').order('created_at', { ascending: false });
+    setWeddings(data || []);
   };
 
   useEffect(() => {
-    if (authenticated) loadPhotos();
+    if (authenticated) loadWeddings();
   }, [authenticated]);
 
+  // Создание новой свадьбы
+  const createWedding = async (e) => {
+    e.preventDefault();
+    const title = prompt('Numele cuplului (ex: Maria & Ion):');
+    if (!title) return;
+    const cover = prompt('Link către poza de copertă (ex: https://...jpg):');
+    if (!cover) return;
+
+    const { error } = await supabase.from('weddings').insert({ title, cover_image: cover });
+    if (error) alert('Eroare: ' + error.message);
+    else loadWeddings();
+  };
+
+  // Загрузка фото в выбранную свадьбу
   const uploadPhoto = async (e) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file || !selectedWedding) return;
     setLoading(true);
 
     const fileName = `${Date.now()}_${file.name}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage.from('photos').upload(fileName, file);
-
-    if (uploadError) {
-      alert('Eroare la încărcare: ' + uploadError.message);
-      setLoading(false);
-      return;
-    }
+    const { error: uploadError } = await supabase.storage.from('photos').upload(fileName, file);
+    if (uploadError) { alert(uploadError.message); setLoading(false); return; }
 
     const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName);
-    const imageUrl = urlData.publicUrl;
+    const { error: insertError } = await supabase.from('photos').insert({
+      wedding_id: selectedWedding,
+      image_url: urlData.publicUrl,
+      caption
+    });
 
-    const { error: insertError } = await supabase.from('gallery').insert({ image_url: imageUrl, caption });
-
-    if (insertError) {
-      alert('Eroare la salvare: ' + insertError.message);
-    } else {
-      alert('Foto adăugată!');
-      setCaption('');
-      setFile(null);
-      loadPhotos();
-    }
+    if (insertError) alert(insertError.message);
+    else { alert('Foto adăugată!'); setCaption(''); setFile(null); }
     setLoading(false);
+  };
+
+  // Удаление свадьбы
+  const deleteWedding = async (id) => {
+    if (confirm('Sigur vrei să ștergi această nuntă?')) {
+      await supabase.from('weddings').delete().eq('id', id);
+      loadWeddings();
+    }
   };
 
   if (!authenticated) {
@@ -86,32 +96,39 @@ export default function AdminPage() {
     <div className="min-h-screen p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Admin Panou</h1>
-        <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded-lg">Deconectare</button>
+        <button onClick={() => { localStorage.removeItem('adminAuth'); setAuthenticated(false); }} className="bg-red-500 text-white px-4 py-2 rounded-lg">Deconectare</button>
       </div>
 
-      <form onSubmit={uploadPhoto} className="bg-white p-6 rounded-lg shadow mb-8">
-        <div className="mb-4">
-          <label className="block mb-2 font-medium">Alege fișier</label>
-          <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} className="w-full p-2 border rounded-lg" required />
-        </div>
-        <div className="mb-4">
-          <label className="block mb-2 font-medium">Descriere</label>
-          <input type="text" placeholder="Ex: Nunta Maria & Ion" value={caption} onChange={(e) => setCaption(e.target.value)} className="w-full p-2 border rounded-lg" />
-        </div>
-        <button type="submit" disabled={loading} className="bg-blue-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">
-          {loading ? 'Se încarcă...' : 'Adaugă foto'}
-        </button>
-      </form>
+      {/* Создание свадьбы */}
+      <button onClick={createWedding} className="bg-green-500 text-white px-6 py-2 rounded-lg mb-6">+ Adaugă Nuntă Nouă</button>
 
-      <h2 className="text-xl font-semibold mb-4">Fotografii existente</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {photos.map((photo) => (
-          <div key={photo.id} className="relative rounded-lg overflow-hidden shadow">
-            <img src={photo.image_url} alt={photo.caption || 'Foto'} className="w-full h-32 object-cover" />
-            <p className="text-sm p-2 bg-white">{photo.caption}</p>
+      {/* Список свадеб */}
+      <h2 className="text-xl font-semibold mb-4">Nunțile existente</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {weddings.map(w => (
+          <div key={w.id} className={`p-4 border rounded-lg cursor-pointer ${selectedWedding === w.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`} onClick={() => setSelectedWedding(w.id)}>
+            <img src={w.cover_image} alt={w.title} className="w-full h-24 object-cover rounded mb-2" />
+            <p className="font-semibold text-sm text-center">{w.title}</p>
+            <button onClick={(e) => { e.stopPropagation(); deleteWedding(w.id); }} className="text-red-500 text-xs mt-2 w-full">Șterge</button>
           </div>
         ))}
       </div>
+
+      {/* Загрузка фото в выбранную свадьбу */}
+      {selectedWedding && (
+        <div className="bg-white p-6 rounded-lg shadow mb-8">
+          <h3 className="text-lg font-semibold mb-4">Încarcă foto în: {weddings.find(w => w.id === selectedWedding)?.title}</h3>
+          <form onSubmit={uploadPhoto}>
+            <div className="mb-4">
+              <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} className="w-full p-2 border rounded-lg" required />
+            </div>
+            <div className="mb-4">
+              <input type="text" placeholder="Descriere (ex: Primul dans)" value={caption} onChange={(e) => setCaption(e.target.value)} className="w-full p-2 border rounded-lg" />
+            </div>
+            <button type="submit" disabled={loading} className="bg-blue-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">{loading ? 'Se încarcă...' : 'Adaugă foto'}</button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
