@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { supabase } from '../lib/supabase';
+import { useLanguage } from './LanguageContext';
 
 export default function Home() {
+  const { language, changeLanguage } = useLanguage();
   const [weddings, setWeddings] = useState([]);
   const [selectedWedding, setSelectedWedding] = useState(null);
   const [photos, setPhotos] = useState([]);
@@ -14,23 +16,108 @@ export default function Home() {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const slides = [
-    { bg: '/photo1.jpg', title: 'Povestea voastră în fiecare cadru' },
-    { bg: '/photo2.jpg', title: 'Momente unice, capturate cu eleganță' },
-    { bg: '/photo3.jpg', title: 'Emoții transformate în artă' },
-  ];
-
-  const photographer = {
-    name: 'Ursachi Igor',
-    brand: 'Creative Studio',
-    bio: 'Sunt Igor, fondator al Creative Studio, și de peste un deceniu mă dedic artei fotografice. Cu expertiză în nunți, evenimente private, precum și sesiuni foto personale și de familie, transform fiecare moment într-o poveste vizuală captivantă.',
-    location: 'Activează în Chișinău; disponibil să călătorească în întreaga Moldovă și Europa.',
-    phone: '069434361',
-    email: 'creative.studio.mda@gmail.com',
-    instagram: 'https://www.instagram.com/creative.studio.photography',
-    facebook: 'https://www.facebook.com/creativestudio.moldova',
-    tiktok: 'https://www.tiktok.com/@creativestudiomoldova',
+  // Переводы
+  const t = {
+    ro: {
+      nav: { despre: 'Despre', nunti: 'Nunți', fotograf: 'Fotograf', servicii: 'Servicii', contact: 'Contact' },
+      hero: [
+        { title: 'Povestea voastră în fiecare cadru' },
+        { title: 'Momente unice, capturate cu eleganță' },
+        { title: 'Emoții transformate în artă' },
+      ],
+      despre: {
+        title: 'Despre noi',
+        subtitle: 'De peste 5 ani creăm amintiri de neuitat pentru cupluri din Moldova și România.',
+        stats: [
+          { title: 'Experiență', text: 'Peste 300 de nunți filmate' },
+          { title: 'Stil unic', text: 'Luminos, natural, emoționant' },
+          { title: 'Termene rapide', text: 'Fotografii gata în 2 luni' },
+        ],
+      },
+      weddings: {
+        title: 'Nunțile noastre',
+        subtitle: 'Alege o nuntă pentru a vedea toate fotografiile',
+        empty: 'Nicio nuntă adăugată încă.',
+        loading: 'Se încarcă...',
+        noPhotos: 'Nicio fotografie în această nuntă.',
+      },
+      photographer: {
+        title: 'Fotograful',
+        name: 'Ursachi Igor',
+        brand: 'Creative Studio',
+        location: 'Activează în Chișinău; disponibil să călătorească în întreaga Moldovă și Europa.',
+        phoneLabel: 'Telefon',
+        emailLabel: 'Email',
+      },
+      services: {
+        title: 'Pachete Disponibile',
+        subtitle: 'Alege pachetul perfect pentru nunta ta',
+        packages: [
+          { name: 'Essential Story', price: '1.000 €', currency: 'de la', features: ['1 fotograf profesionist', 'Galerie online privată', 'Editare JPG profesională', 'Min. 800 foto editate', 'Livrare link + USB', 'Termen livrare: 5 luni'], notIncluded: ['Preview 48h'] },
+          { name: 'Eternal Story', price: '1.300 €', currency: 'de la', features: ['Fotograf + asistent', 'Preview 48h', 'Min. 1.000 foto editate', 'Termen livrare: 3 luni'], notIncluded: ['Album foto premium'] },
+          { name: 'Heirloom Story', price: '2.200 €', currency: 'de la', features: ['2 Fotografi + asistent', 'Preview 48h', 'Sesiune foto after wedding', 'Album foto premium inclus', 'Min. 1.200 foto editate', 'Termen livrare: 2 luni'], notIncluded: [] },
+        ],
+      },
+      contact: {
+        title: 'Contactează-ne',
+        subtitle: 'Pentru rezervări și informații suplimentare ne contactați',
+      },
+    },
+    ru: {
+      nav: { despre: 'О нас', nunti: 'Свадьбы', fotograf: 'Фотограф', servicii: 'Услуги', contact: 'Контакты' },
+      hero: [
+        { title: 'Ваша история в каждом кадре' },
+        { title: 'Уникальные моменты, запечатленные с элегантностью' },
+        { title: 'Эмоции, превращенные в искусство' },
+      ],
+      despre: {
+        title: 'О нас',
+        subtitle: 'Более 5 лет мы создаем незабываемые воспоминания для пар из Молдовы и Румынии.',
+        stats: [
+          { title: 'Опыт', text: 'Более 300 снятых свадеб' },
+          { title: 'Уникальный стиль', text: 'Светлый, естественный, эмоциональный' },
+          { title: 'Быстрые сроки', text: 'Фотографии готовы через 2 месяца' },
+        ],
+      },
+      weddings: {
+        title: 'Наши свадьбы',
+        subtitle: 'Выберите свадьбу, чтобы увидеть все фотографии',
+        empty: 'Пока не добавлено ни одной свадьбы.',
+        loading: 'Загрузка...',
+        noPhotos: 'В этой свадьбе пока нет фотографий.',
+      },
+      photographer: {
+        title: 'Фотограф',
+        name: 'Урсаки Игорь',
+        brand: 'Creative Studio',
+        location: 'Работает в Кишиневе; готов путешествовать по всей Молдове и Европе.',
+        phoneLabel: 'Телефон',
+        emailLabel: 'Email',
+      },
+      services: {
+        title: 'Доступные пакеты',
+        subtitle: 'Выберите идеальный пакет для вашей свадьбы',
+        packages: [
+          { name: 'Essential Story', price: '1.000 €', currency: 'от', features: ['1 профессиональный фотограф', 'Приватная онлайн-галерея', 'Профессиональная обработка JPG', 'Мин. 800 обработанных фото', 'Доставка ссылка + USB', 'Срок сдачи: 5 месяцев'], notIncluded: ['Превью 48ч'] },
+          { name: 'Eternal Story', price: '1.300 €', currency: 'от', features: ['Фотограф + ассистент', 'Превью 48ч', 'Мин. 1.000 обработанных фото', 'Срок сдачи: 3 месяца'], notIncluded: ['Премиум альбом'] },
+          { name: 'Heirloom Story', price: '2.200 €', currency: 'от', features: ['2 фотографа + ассистент', 'Превью 48ч', 'Свадебная фотосессия', 'Премиум альбом включен', 'Мин. 1.200 обработанных фото', 'Срок сдачи: 2 месяца'], notIncluded: [] },
+        ],
+      },
+      contact: {
+        title: 'Свяжитесь с нами',
+        subtitle: 'Для бронирования и дополнительной информации свяжитесь с нами',
+      },
+    },
   };
+
+  // Выбираем текущий язык
+  const currentLang = t[language];
+
+  // Слайды для hero (переводим на лету)
+  const slides = currentLang.hero.map((item, index) => ({
+    bg: `/photo${index + 1}.jpg`,
+    title: item.title,
+  }));
 
   useEffect(() => {
     const fetchWeddings = async () => {
@@ -83,33 +170,60 @@ export default function Home() {
     setPhotos([]);
   };
 
+  // Данные фотографа (переводим на лету)
+  const photographer = {
+    name: currentLang.photographer.name,
+    brand: currentLang.photographer.brand,
+    bio: currentLang.photographer.bio,
+    location: currentLang.photographer.location,
+    phone: '069434361',
+    email: 'creative.studio.mda@gmail.com',
+    instagram: 'https://www.instagram.com/creative.studio.photography',
+    facebook: 'https://www.facebook.com/creativestudio.moldova',
+    tiktok: 'https://www.tiktok.com/@creativestudiomoldova',
+  };
+
   return (
     <main>
-      {/* Навигация с логотипом по центру и меню в центре */}
+      {/* Навигация */}
       <nav className="fixed top-0 left-0 w-full z-50 bg-white/95 backdrop-blur border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex justify-between items-center h-16">
-            {/* Логотип слева (на десктопе) */}
+            {/* Логотип слева */}
             <div className="flex-1 flex justify-start">
               <a href="#" className="flex items-center">
                 <Image src="/logo.png" alt="Creative Studio" width={150} height={50} className="h-10 w-auto" priority />
               </a>
             </div>
 
-            {/* Меню по центру (только на десктопе) */}
-            <div className="hidden md:flex flex-1 justify-center">
-              <ul className="flex gap-8 list-none">
-                <li><a href="#despre" className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">Despre</a></li>
-                <li><a href="#weddings" className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">Nunți</a></li>
-                <li><a href="#photographer" className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">Fotograf</a></li>
-                <li><a href="#servicii" className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">Servicii</a></li>
-                <li><a href="#contact" className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">Contact</a></li>
+            {/* Меню по центру (идеально) */}
+            <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
+              <ul className="flex gap-8 list-none whitespace-nowrap">
+                <li><a href="#despre" className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">{currentLang.nav.despre}</a></li>
+                <li><a href="#weddings" className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">{currentLang.nav.nunti}</a></li>
+                <li><a href="#photographer" className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">{currentLang.nav.fotograf}</a></li>
+                <li><a href="#servicii" className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">{currentLang.nav.servicii}</a></li>
+                <li><a href="#contact" className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">{currentLang.nav.contact}</a></li>
               </ul>
             </div>
 
-            {/* Бургер справа (только на мобильном) */}
-            <div className="flex-1 flex justify-end md:hidden">
-              <button onClick={() => setMenuOpen(true)} className="p-2 rounded-md text-gray-900 hover:text-blue-600">
+            {/* Переключатель языка и бургер справа */}
+            <div className="flex-1 flex justify-end items-center gap-4">
+              <div className="hidden md:flex gap-2 text-sm font-medium">
+                <button
+                  onClick={() => changeLanguage('ro')}
+                  className={`px-2 py-1 rounded ${language === 'ro' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-blue-500'}`}
+                >
+                  RO
+                </button>
+                <button
+                  onClick={() => changeLanguage('ru')}
+                  className={`px-2 py-1 rounded ${language === 'ru' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-blue-500'}`}
+                >
+                  RU
+                </button>
+              </div>
+              <button onClick={() => setMenuOpen(true)} className="md:hidden p-2 rounded-md text-gray-900 hover:text-blue-600">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
@@ -121,13 +235,11 @@ export default function Home() {
 
       {/* Мобильное меню - выезжающее справа с затемнением */}
       <div className={`fixed inset-0 z-[999] transition-all duration-300 ${menuOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-        {/* Затемнение */}
         <div 
           className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${menuOpen ? 'opacity-100' : 'opacity-0'}`}
           onClick={() => setMenuOpen(false)}
         ></div>
         
-        {/* Само меню (панель справа) */}
         <div className={`absolute top-0 right-0 h-full w-[80%] max-w-sm bg-white shadow-2xl transition-transform duration-300 ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="flex flex-col h-full p-6 pt-20 relative">
             <button onClick={() => setMenuOpen(false)} className="absolute top-4 right-4 text-3xl text-gray-900 hover:text-blue-600">&times;</button>
@@ -135,12 +247,27 @@ export default function Home() {
               <Image src="/logo.png" alt="Creative Studio" width={150} height={50} className="h-10 w-auto" />
             </a>
             <ul className="flex flex-col gap-6 text-center list-none">
-              <li><a href="#despre" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">Despre</a></li>
-              <li><a href="#weddings" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">Nunți</a></li>
-              <li><a href="#photographer" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">Fotograf</a></li>
-              <li><a href="#servicii" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">Servicii</a></li>
-              <li><a href="#contact" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">Contact</a></li>
+              <li><a href="#despre" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">{currentLang.nav.despre}</a></li>
+              <li><a href="#weddings" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">{currentLang.nav.nunti}</a></li>
+              <li><a href="#photographer" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">{currentLang.nav.fotograf}</a></li>
+              <li><a href="#servicii" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">{currentLang.nav.servicii}</a></li>
+              <li><a href="#contact" onClick={() => setMenuOpen(false)} className="text-xl font-semibold text-gray-900 hover:text-blue-600">{currentLang.nav.contact}</a></li>
             </ul>
+            {/* Переключатель языка в мобильном меню */}
+            <div className="flex justify-center gap-4 mt-8">
+              <button
+                onClick={() => changeLanguage('ro')}
+                className={`px-4 py-2 rounded-full text-sm font-semibold ${language === 'ro' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                RO
+              </button>
+              <button
+                onClick={() => changeLanguage('ru')}
+                className={`px-4 py-2 rounded-full text-sm font-semibold ${language === 'ru' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                RU
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -153,7 +280,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/50"></div>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4">
               <h1 className="text-4xl md:text-6xl font-bold mb-4">{slide.title}</h1>
-              <a href="#weddings" className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-full font-medium transition">Vezi nunțile</a>
+              <a href="#weddings" className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-full font-medium transition">{currentLang.nav.nunti}</a>
             </div>
           </div>
         ))}
@@ -166,21 +293,24 @@ export default function Home() {
 
       {/* Despre */}
       <section id="despre" className="py-20 px-6 max-w-6xl mx-auto text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">Despre noi</h2>
-        <p className="text-gray-500 mb-12">De peste 5 ani creăm amintiri de neuitat pentru cupluri din Moldova și România.</p>
+        <h2 className="text-3xl md:text-4xl font-bold mb-4">{currentLang.despre.title}</h2>
+        <p className="text-gray-500 mb-12">{currentLang.despre.subtitle}</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-gray-50 p-8 rounded-2xl"><h3 className="font-bold mb-2">Experiență</h3><p className="text-gray-500">Peste 300 de nunți filmate</p></div>
-          <div className="bg-gray-50 p-8 rounded-2xl"><h3 className="font-bold mb-2">Stil unic</h3><p className="text-gray-500">Luminos, natural, emoționant</p></div>
-          <div className="bg-gray-50 p-8 rounded-2xl"><h3 className="font-bold mb-2">Termene rapide</h3><p className="text-gray-500">Fotografii gata în 2 luni</p></div>
+          {currentLang.despre.stats.map((stat, idx) => (
+            <div key={idx} className="bg-gray-50 p-8 rounded-2xl">
+              <h3 className="font-bold mb-2">{stat.title}</h3>
+              <p className="text-gray-500">{stat.text}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Свадьбы - исправлена сетка для вертикальных фото */}
+      {/* Свадьбы - вертикальные фото */}
       <section id="weddings" className="py-20 px-6 max-w-6xl mx-auto text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">Nunțile noastre</h2>
-        <p className="text-gray-500 mb-12">Alege o nuntă pentru a vedea toate fotografiile</p>
+        <h2 className="text-3xl md:text-4xl font-bold mb-4">{currentLang.weddings.title}</h2>
+        <p className="text-gray-500 mb-12">{currentLang.weddings.subtitle}</p>
         {weddings.length === 0 ? (
-          <p className="text-gray-500">Nicio nuntă adăugată încă.</p>
+          <p className="text-gray-500">{currentLang.weddings.empty}</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
             {weddings.map((w) => (
@@ -205,7 +335,7 @@ export default function Home() {
             <button onClick={closeWedding} className="text-black text-3xl">&times;</button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-6">
-            {loadingWedding ? <p className="text-gray-600">Se încarcă...</p> : photos.length === 0 ? <p className="text-gray-600">Nicio fotografie în această nuntă.</p> : photos.map((photo, i) => (
+            {loadingWedding ? <p className="text-gray-600">{currentLang.weddings.loading}</p> : photos.length === 0 ? <p className="text-gray-600">{currentLang.weddings.noPhotos}</p> : photos.map((photo, i) => (
               <div key={photo.id} className="cursor-pointer aspect-[4/5] overflow-hidden rounded-lg" onClick={() => openLightbox(i)}>
                 <Image src={photo.image_url} alt={photo.caption || 'Fotografie'} width={600} height={750} className="w-full h-full object-cover" loading="lazy" />
               </div>
@@ -226,7 +356,7 @@ export default function Home() {
 
       {/* Фотограф */}
       <section id="photographer" className="py-20 px-6 max-w-6xl mx-auto text-center border-t border-gray-100">
-        <h2 className="text-3xl md:text-4xl font-bold mb-8">Fotograful</h2>
+        <h2 className="text-3xl md:text-4xl font-bold mb-8">{currentLang.photographer.title}</h2>
         <div className="flex flex-col md:flex-row items-center justify-center gap-12">
           <div className="w-64 h-64 rounded-full overflow-hidden shadow-lg">
             <Image src="/logo.png" alt={photographer.name} width={256} height={256} className="w-full h-full object-cover" />
@@ -250,58 +380,37 @@ export default function Home() {
 
       {/* Пакеты услуг */}
       <section id="servicii" className="py-20 px-6 max-w-6xl mx-auto text-center bg-white">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">Pachete Disponibile</h2>
-        <p className="text-gray-500 mb-12">Alege pachetul perfect pentru nunta ta</p>
+        <h2 className="text-3xl md:text-4xl font-bold mb-4">{currentLang.services.title}</h2>
+        <p className="text-gray-500 mb-12">{currentLang.services.subtitle}</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
-          <div className="bg-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200">
-            <h3 className="text-xl font-bold mb-2">Essential Story</h3>
-            <div className="text-3xl font-bold text-gray-800 mb-6">1.000 € <span className="text-sm font-normal text-gray-500">de la</span></div>
-            <ul className="text-left text-gray-600 space-y-2 text-sm">
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> 1 fotograf profesionist</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Galerie online privată</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Editare JPG profesională</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Min. 800 foto editate</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Livrare link + USB</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Termen livrare: 5 luni</li>
-              <li className="flex items-center gap-2 text-gray-400"><span className="text-red-400">✘</span> Preview 48h</li>
-            </ul>
-            <a href="#contact" className="block mt-6 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-full font-medium">Rezervă</a>
-          </div>
-          <div className="bg-white p-8 rounded-2xl shadow-xl border-2 border-yellow-500 relative">
-            <span className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-yellow-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase">Cel Mai Popular</span>
-            <h3 className="text-xl font-bold mb-2">Eternal Story</h3>
-            <div className="text-3xl font-bold text-gray-800 mb-6">1.300 € <span className="text-sm font-normal text-gray-500">de la</span></div>
-            <ul className="text-left text-gray-600 space-y-2 text-sm">
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Fotograf + asistent</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Preview 48h</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Min. 1.000 foto editate</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Termen livrare: 3 luni</li>
-              <li className="flex items-center gap-2 text-gray-400"><span className="text-red-400">✘</span> Album foto premium</li>
-            </ul>
-            <a href="#contact" className="block mt-6 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-full font-medium">Rezervă</a>
-          </div>
-          <div className="bg-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200">
-            <h3 className="text-xl font-bold mb-2">Heirloom Story</h3>
-            <div className="text-3xl font-bold text-gray-800 mb-6">2.200 € <span className="text-sm font-normal text-gray-500">de la</span></div>
-            <ul className="text-left text-gray-600 space-y-2 text-sm">
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> 2 Fotografi + asistent</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Preview 48h</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Sesiune foto after wedding</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Album foto premium inclus</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Min. 1.200 foto editate</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Termen livrare: 2 luni</li>
-            </ul>
-            <a href="#contact" className="block mt-6 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-full font-medium">Rezervă</a>
-          </div>
+          {currentLang.services.packages.map((pkg, idx) => (
+            <div key={idx} className={`bg-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200 ${idx === 1 ? 'border-2 border-yellow-500 relative bg-white shadow-xl' : ''}`}>
+              {idx === 1 && (
+                <span className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-yellow-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase">Popular</span>
+              )}
+              <h3 className="text-xl font-bold mb-2">{pkg.name}</h3>
+              <div className="text-3xl font-bold text-gray-800 mb-6">{pkg.price} <span className="text-sm font-normal text-gray-500">{pkg.currency}</span></div>
+              <ul className="text-left text-gray-600 space-y-2 text-sm">
+                {pkg.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2"><span className="text-green-500">✔</span> {feature}</li>
+                ))}
+                {pkg.notIncluded.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2 text-gray-400"><span className="text-red-400">✘</span> {feature}</li>
+                ))}
+              </ul>
+              <a href="#contact" className="block mt-6 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-full font-medium">{currentLang.nav.contact}</a>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* Contact */}
       <section id="contact" className="py-20 px-6 max-w-6xl mx-auto text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">Contactează-ne</h2>
+        <h2 className="text-3xl md:text-4xl font-bold mb-4">{currentLang.contact.title}</h2>
+        <p className="text-gray-500 mb-12">{currentLang.contact.subtitle}</p>
         <div className="flex flex-col md:flex-row justify-center items-center gap-8">
           <div className="bg-gray-50 p-8 rounded-2xl text-left">
-            <h3 className="font-bold mb-4">Date de contact</h3>
+            <h3 className="font-bold mb-4">{currentLang.contact.title}</h3>
             <p className="text-gray-500 mb-2">📞 <a href={`tel:${photographer.phone}`} className="text-blue-600 hover:underline">{photographer.phone}</a></p>
             <p className="text-gray-500 mb-2">✉️ <a href={`mailto:${photographer.email}`} className="text-blue-600 hover:underline">{photographer.email}</a></p>
             <p className="text-gray-500 mb-2">📍 {photographer.location}</p>

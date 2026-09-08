@@ -1,6 +1,6 @@
 import './globals.css';
 import { Inter, Montserrat } from 'next/font/google';
-import LenisProvider from '../components/LenisProvider';
+import { LanguageProvider } from './LanguageContext'; // Создадим этот файл чуть ниже
 
 const inter = Inter({ subsets: ['latin'], weight: ['300', '400', '500'] });
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['600', '700'] });
@@ -14,7 +14,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ro">
       <body className={`${inter.className} ${montserrat.className} antialiased`}>
-        <LenisProvider>{children}</LenisProvider>
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );
