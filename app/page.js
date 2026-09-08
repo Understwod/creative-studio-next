@@ -24,7 +24,6 @@ export default function Home() {
     { bg: '/photo3.jpg', title: 'Emoții transformate în artă' },
   ];
 
-  // Данные фотографа
   const photographer = {
     name: 'Ursachi Igor',
     brand: 'Creative Studio',
@@ -37,7 +36,7 @@ export default function Home() {
     tiktok: 'https://www.tiktok.com/@creativestudiomoldova',
   };
 
-  // Загружаем свадьбы (только не скрытые)
+  // Загрузка свадеб (только не скрытые)
   useEffect(() => {
     const fetchWeddings = async () => {
       const { data } = await supabase.from('weddings').select('*').eq('is_hidden', false).order('created_at', { ascending: false });
@@ -46,45 +45,43 @@ export default function Home() {
     fetchWeddings();
   }, []);
 
-  // Анимации появления
+  // Оптимизированные анимации через batch
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Массовая анимация для всех .reveal элементов
       gsap.utils.toArray('.reveal').forEach((el) => {
-        gsap.fromTo(el, 
-          { opacity: 0, y: 50 },
-          {
-            opacity: 1, y: 0, duration: 1.2, ease: 'power3.out',
-            scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
-          }
-        );
-      });
-
-      gsap.utils.toArray('.wedding-card').forEach((el, i) => {
         gsap.fromTo(el,
           { opacity: 0, y: 30 },
           {
-            opacity: 1, y: 0, duration: 0.8, delay: i * 0.1, ease: 'power3.out',
-            scrollTrigger: { trigger: el.parentElement, start: 'top 80%' }
+            opacity: 1, y: 0, duration: 0.8, ease: 'power2.out',
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 85%',
+              toggleActions: 'play none none none'
+            }
           }
         );
       });
 
-      gsap.to('.hero-bg', {
-        yPercent: 20,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '.hero-slider',
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true
-        }
-      });
+      // Параллакс только на десктопе (с амплитудой 10% и инерцией)
+      if (window.innerWidth > 768) {
+        gsap.to('.hero-bg', {
+          yPercent: 10,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.hero-slider',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1 // плавная инерция
+          }
+        });
+      }
     });
 
     return () => ctx.revert();
   }, []);
 
-  // Слайдер
+  // Слайдер (без изменений)
   useEffect(() => {
     const interval = setInterval(() => setCurrentSlide((prev) => (prev + 1) % slides.length), 5000);
     return () => clearInterval(interval);
@@ -115,7 +112,6 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [lightboxOpen, photos.length]);
 
-  // Открытие свадьбы
   const openWedding = async (id) => {
     setLoadingWedding(true);
     setSelectedWedding(id);
@@ -137,8 +133,6 @@ export default function Home() {
         <a href="#" className="flex items-center">
           <Image src="/logo.png" alt="Creative Studio" width={150} height={50} className="h-10 w-auto" priority />
         </a>
-
-        {/* Обычные ссылки для десктопа */}
         <ul className="hidden md:flex gap-8 list-none">
           <li><a href="#despre" className="text-sm uppercase tracking-wide text-gray-500 hover:text-blue-500">Despre</a></li>
           <li><a href="#weddings" className="text-sm uppercase tracking-wide text-gray-500 hover:text-blue-500">Nunți</a></li>
@@ -146,8 +140,6 @@ export default function Home() {
           <li><a href="#servicii" className="text-sm uppercase tracking-wide text-gray-500 hover:text-blue-500">Servicii</a></li>
           <li><a href="#contact" className="text-sm uppercase tracking-wide text-gray-500 hover:text-blue-500">Contact</a></li>
         </ul>
-
-        {/* Бургер для мобильного */}
         <button onClick={() => setMenuOpen(true)} className="md:hidden flex flex-col gap-1.5 p-2">
           <span className="w-6 h-0.5 bg-black"></span>
           <span className="w-6 h-0.5 bg-black"></span>
@@ -155,7 +147,7 @@ export default function Home() {
         </button>
       </nav>
 
-      {/* ПОЛНОЭКРАННОЕ МОБИЛЬНОЕ МЕНЮ */}
+      {/* Полноэкранное мобильное меню */}
       <div className={`fixed inset-0 z-[999] flex flex-col justify-center items-center gap-8 bg-white/95 backdrop-blur-xl transition-all duration-500 ${menuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         <button onClick={() => setMenuOpen(false)} className="absolute top-4 right-4 text-4xl text-gray-600 hover:text-gray-900">
           &times;
@@ -169,7 +161,7 @@ export default function Home() {
         </ul>
       </div>
 
-      {/* Hero Слайдер */}
+      {/* Hero слайдер */}
       <section className="relative h-[80vh] overflow-hidden hero-slider">
         {slides.map((slide, i) => (
           <div key={i} className={`absolute inset-0 transition-opacity duration-1000 ${i === currentSlide ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundImage: `url(${slide.bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
@@ -198,11 +190,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Секция со списком свадеб */}
+      {/* Свадьбы */}
       <section id="weddings" className="py-20 px-6 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 reveal">Nunțile noastre</h2>
         <p className="text-gray-500 mb-12 reveal">Alege o nuntă pentru a vedea toate fotografiile</p>
-        
         {weddings.length === 0 ? (
           <p className="text-gray-500">Nicio nuntă adăugată încă.</p>
         ) : (
@@ -210,7 +201,7 @@ export default function Home() {
             {weddings.map((w) => (
               <div key={w.id} className="cursor-pointer group wedding-card" onClick={() => openWedding(w.id)}>
                 <div className="relative overflow-hidden rounded-xl shadow-lg">
-                  <img src={w.cover_image} alt={w.title} className="w-full h-64 object-cover transition duration-500 group-hover:scale-110" />
+                  <Image src={w.cover_image} alt={w.title} width={800} height={600} className="w-full h-64 object-cover transition duration-500 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center">
                     <span className="text-white text-xl font-bold px-4 text-center">{w.title}</span>
                   </div>
@@ -231,45 +222,19 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
             {loadingWedding ? <p className="text-gray-600">Se încarcă...</p> : photos.length === 0 ? <p className="text-gray-600">Nicio fotografie în această nuntă.</p> : photos.map((photo, i) => (
               <div key={photo.id} className="cursor-pointer" onClick={() => openLightbox(i)}>
-                <img src={photo.image_url} alt={photo.caption || 'Fotografie'} className="w-full h-48 object-cover rounded-lg shadow-sm" />
+                <Image src={photo.image_url} alt={photo.caption || 'Fotografie'} width={600} height={400} className="w-full h-48 object-cover rounded-lg shadow-sm" />
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Лайтбокс с крестиком, счётчиком и подписью */}
+      {/* Лайтбокс */}
       {lightboxOpen && (
         <div className="fixed inset-0 bg-white z-[9999] flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
-          
-          {/* Счётчик */}
-          <div className="absolute top-4 left-4 bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
-            {currentPhotoIndex + 1} / {photos.length}
-          </div>
-
-          {/* Крестик */}
-          <button 
-            className="absolute top-4 right-4 text-black text-4xl hover:text-gray-600 transition z-10"
-            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
-            aria-label="Închide"
-          >
-            &times;
-          </button>
-
-          {/* Кнопка назад */}
+          <button className="absolute top-4 right-4 text-black text-4xl hover:text-gray-600 transition z-10" onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}>&times;</button>
           <button className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); prevImage(); }}>‹</button>
-          
-          {/* Фото */}
-          <img src={photos[currentPhotoIndex].image_url} alt={photos[currentPhotoIndex].caption || 'Fotografie mărită'} className="max-w-[95%] max-h-[90%] w-auto h-auto object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
-          
-          {/* Подпись */}
-          {photos[currentPhotoIndex].caption && (
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800/80 text-white px-4 py-2 rounded-full text-sm text-center">
-              {photos[currentPhotoIndex].caption}
-            </div>
-          )}
-
-          {/* Кнопка вперед */}
+          <Image src={photos[currentPhotoIndex].image_url} alt={photos[currentPhotoIndex].caption || 'Fotografie mărită'} width={1600} height={1200} className="max-w-[95%] max-h-[95%] w-auto h-auto object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
           <button className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); nextImage(); }}>›</button>
         </div>
       )}
@@ -279,7 +244,7 @@ export default function Home() {
         <h2 className="text-3xl md:text-4xl font-bold mb-8 reveal">Fotograful</h2>
         <div className="flex flex-col md:flex-row items-center justify-center gap-12">
           <div className="w-64 h-64 rounded-full overflow-hidden shadow-lg reveal">
-            <img src="/logo.png" alt={photographer.name} className="w-full h-full object-cover" />
+            <Image src="/logo.png" alt={photographer.name} width={256} height={256} className="w-full h-full object-cover" />
           </div>
           <div className="text-left max-w-2xl reveal">
             <h3 className="text-2xl font-bold mb-2">{photographer.name} <span className="text-gray-500 font-normal">| {photographer.brand}</span></h3>
@@ -321,7 +286,6 @@ export default function Home() {
             </ul>
             <a href="#contact" className="block mt-6 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-full font-medium">Rezervă</a>
           </div>
-
           {/* Eternal Story */}
           <div className="bg-white p-8 rounded-2xl shadow-xl reveal border-2 border-yellow-500 relative">
             <span className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-yellow-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase">Cel Mai Popular</span>
@@ -341,7 +305,6 @@ export default function Home() {
             </ul>
             <a href="#contact" className="block mt-6 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-full font-medium">Rezervă</a>
           </div>
-
           {/* Heirloom Story */}
           <div className="bg-gray-50 p-8 rounded-2xl shadow-lg reveal border border-gray-200">
             <h3 className="text-xl font-bold mb-2">Heirloom Story</h3>
@@ -367,7 +330,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Contact (без формы, только контакты) */}
+      {/* Контакты */}
       <section id="contact" className="py-20 px-6 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-4 reveal">Contactează-ne</h2>
         <p className="text-gray-500 mb-12 reveal">Pentru rezervări și informații suplimentare ne contactați</p>
@@ -386,7 +349,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Футер */}
       <footer className="bg-gray-50 py-8 text-center text-gray-500">
         <p>© 2026 Creative Studio. Toate drepturile rezervate.</p>
         <p className="mt-2">
@@ -396,7 +359,7 @@ export default function Home() {
         </p>
       </footer>
 
-      {/* Floating action buttons (mobile only) */}
+      {/* Плавающие кнопки для мобильных */}
       <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4 md:hidden">
         <a href={`tel:${photographer.phone}`} className="bg-blue-500 text-white p-4 rounded-full shadow-lg hover:bg-blue-600 transition">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
