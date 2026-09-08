@@ -8,15 +8,12 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [weddings, setWeddings] = useState([]);
   const [selectedWedding, setSelectedWedding] = useState(null);
-  
-  // Состояния для создания свадьбы
   const [title, setTitle] = useState('');
   const [coverFile, setCoverFile] = useState(null);
-
-  // Состояния для загрузки нескольких фото
-  const [files, setFiles] = useState([]); // Теперь это массив!
+  const [files, setFiles] = useState([]);
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
+  const [photos, setPhotos] = useState([]);
 
   useEffect(() => {
     if (localStorage.getItem('adminAuth') === 'true') setAuthenticated(true);
@@ -37,78 +34,75 @@ export default function AdminPage() {
     setWeddings(data || []);
   };
 
+  const loadPhotos = async (weddingId) => {
+    const { data } = await supabase.from('photos').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false });
+    setPhotos(data || []);
+  };
+
   useEffect(() => {
     if (authenticated) loadWeddings();
   }, [authenticated]);
 
-  // Создание новой свадьбы
+  useEffect(() => {
+    if (selectedWedding) loadPhotos(selectedWedding);
+  }, [selectedWedding]);
+
   const createWedding = async (e) => {
     e.preventDefault();
-    if (!title || !coverFile) {
-      alert('Te rugăm să introduci numele și să selectezi o poză de copertă!');
-      return;
-    }
-
+    if (!title || !coverFile) return;
     setLoading(true);
 
     const coverFileName = `${Date.now()}_${coverFile.name}`;
     const { error: uploadError } = await supabase.storage.from('photos').upload(coverFileName, coverFile);
-
-    if (uploadError) {
-      alert('Eroare la încărcarea copertei: ' + uploadError.message);
-      setLoading(false);
-      return;
-    }
+    if (uploadError) { alert(uploadError.message); setLoading(false); return; }
 
     const { data: urlData } = supabase.storage.from('photos').getPublicUrl(coverFileName);
-    const coverUrl = urlData.publicUrl;
+    const { error: insertError } = await supabase.from('weddings').insert({ title, cover_image: urlData.publicUrl });
 
-    const { error: insertError } = await supabase.from('weddings').insert({ title, cover_image: coverUrl });
-
-    if (insertError) {
-      alert('Eroare la crearea nunții: ' + insertError.message);
-    } else {
-      alert('Nunta a fost creată!');
-      setTitle('');
-      setCoverFile(null);
-      loadWeddings();
-    }
+    if (insertError) alert(insertError.message);
+    else { alert('Nunta a fost creată!'); setTitle(''); setCoverFile(null); loadWeddings(); }
     setLoading(false);
   };
 
-  // Загрузка НЕСКОЛЬКИХ фото в выбранную свадьбу
   const uploadPhotos = async (e) => {
     e.preventDefault();
     if (files.length === 0 || !selectedWedding) return;
     setLoading(true);
 
-    // Проходим циклом по каждому выбранному файлу
     for (const file of files) {
       const fileName = `${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage.from('photos').upload(fileName, file);
       if (uploadError) { alert(uploadError.message); setLoading(false); return; }
 
       const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName);
-      const { error: insertError } = await supabase.from('photos').insert({
-        wedding_id: selectedWedding,
-        image_url: urlData.publicUrl,
-        caption: caption || '' // Одну подпись можно применить ко всем сразу
-      });
-
-      if (insertError) { alert(insertError.message); setLoading(false); return; }
+      await supabase.from('photos').insert({ wedding_id: selectedWedding, image_url: urlData.publicUrl, caption });
     }
 
     alert('Fotografiile au fost adăugate!');
-    setFiles([]); // Очищаем выбранные файлы
+    setFiles([]);
     setCaption('');
+    loadPhotos(selectedWedding);
     setLoading(false);
   };
 
-  // Удаление свадьбы
+  const toggleHidden = async (id, currentValue) => {
+    const { error } = await supabase.from('weddings').update({ is_hidden: !currentValue }).eq('id', id);
+    if (error) alert(error.message);
+    else loadWeddings();
+  };
+
   const deleteWedding = async (id) => {
     if (confirm('Sigur vrei să ștergi această nuntă?')) {
       await supabase.from('weddings').delete().eq('id', id);
       loadWeddings();
+      if (selectedWedding === id) { setSelectedWedding(null); setPhotos([]); }
+    }
+  };
+
+  const deletePhoto = async (photoId) => {
+    if (confirm('Sigur vrei să ștergi această fotografie?')) {
+      await supabase.from('photos').delete().eq('id', photoId);
+      loadPhotos(selectedWedding);
     }
   };
 
@@ -142,9 +136,7 @@ export default function AdminPage() {
             <label className="block mb-2 text-sm font-medium">Alege poză de copertă</label>
             <input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files[0])} className="w-full p-2 border rounded-lg" required />
           </div>
-          <button type="submit" disabled={loading} className="bg-green-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">
-            {loading ? 'Se încarcă...' : '+ Adaugă Nuntă'}
-          </button>
+          <button type="submit" disabled={loading} className="bg-green-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">{loading ? 'Se încarcă...' : '+ Adaugă Nuntă'}</button>
         </form>
       </div>
 
@@ -155,7 +147,12 @@ export default function AdminPage() {
           <div key={w.id} className={`p-4 border rounded-lg cursor-pointer ${selectedWedding === w.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`} onClick={() => setSelectedWedding(w.id)}>
             <img src={w.cover_image} alt={w.title} className="w-full h-24 object-cover rounded mb-2" />
             <p className="font-semibold text-sm text-center">{w.title}</p>
-            <button onClick={(e) => { e.stopPropagation(); deleteWedding(w.id); }} className="text-red-500 text-xs mt-2 w-full">Șterge</button>
+            <div className="flex justify-between mt-2">
+              <button onClick={(e) => { e.stopPropagation(); toggleHidden(w.id, w.is_hidden); }} className={`text-xs px-2 py-1 rounded ${w.is_hidden ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
+                {w.is_hidden ? 'Arată' : 'Ascunde'}
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); deleteWedding(w.id); }} className="text-red-500 text-xs px-2 py-1">Șterge</button>
+            </div>
           </div>
         ))}
       </div>
@@ -167,16 +164,24 @@ export default function AdminPage() {
           <form onSubmit={uploadPhotos}>
             <div className="mb-4">
               <label className="block mb-2 text-sm font-medium">Selectează mai multe fotografii (ține apăsat Ctrl sau Shift)</label>
-              {/* ДОБАВЛЕН АТРИБУТ multiple */}
               <input type="file" accept="image/*" multiple onChange={(e) => setFiles(Array.from(e.target.files))} className="w-full p-2 border rounded-lg" required />
             </div>
             <div className="mb-4">
               <input type="text" placeholder="Descriere pentru toate (ex: Primul dans)" value={caption} onChange={(e) => setCaption(e.target.value)} className="w-full p-2 border rounded-lg" />
             </div>
-            <button type="submit" disabled={loading} className="bg-blue-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">
-              {loading ? 'Se încarcă...' : 'Adaugă fotografiile'}
-            </button>
+            <button type="submit" disabled={loading} className="bg-blue-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">{loading ? 'Se încarcă...' : 'Adaugă fotografiile'}</button>
           </form>
+
+          {/* Список фото с удалением */}
+          <h4 className="text-md font-semibold mt-6 mb-2">Fotografiile adăugate:</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {photos.map(photo => (
+              <div key={photo.id} className="relative group">
+                <img src={photo.image_url} alt={photo.caption || 'Foto'} className="w-full h-24 object-cover rounded" />
+                <button onClick={() => deletePhoto(photo.id)} className="absolute top-1 right-1 bg-red-500 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">Șterge</button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

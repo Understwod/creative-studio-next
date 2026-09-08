@@ -40,7 +40,7 @@ export default function Home() {
   // Загружаем свадьбы
   useEffect(() => {
     const fetchWeddings = async () => {
-      const { data } = await supabase.from('weddings').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase.from('weddings').select('*').eq('is_hidden', false).order('created_at', { ascending: false });
       setWeddings(data || []);
     };
     fetchWeddings();
