@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { supabase } from '../lib/supabase';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger);
+// Ленивая загрузка Lenis
+const LenisProvider = dynamic(() => import('../components/LenisProvider'), { ssr: false });
+// Ленивая загрузка GSAP
+// В основном коде мы будем использовать useEffect, но без прямых импортов gsap/ScrollTrigger
+// Они подтянутся динамически внутри useEffect
 
 export default function Home() {
   const [weddings, setWeddings] = useState([]);
@@ -36,43 +39,48 @@ export default function Home() {
     tiktok: 'https://www.tiktok.com/@creativestudiomoldova',
   };
 
-  // Загрузка свадеб (только не скрытые)
+  // Ленивая загрузка GSAP и ScrollTrigger только когда они понадобятся
+  useEffect(() => {
+    let ctx;
+    let isMounted = true;
+
+    const initAnimations = async () => {
+      if (typeof window === 'undefined') return;
+      // Динамически импортируем gsap
+      const gsap = (await import('gsap')).default;
+      const ScrollTrigger = (await import('gsap/ScrollTrigger')).default;
+      gsap.registerPlugin(ScrollTrigger);
+
+      if (isMounted) {
+        ctx = gsap.context(() => {
+          gsap.utils.toArray('.reveal').forEach((el) => {
+            gsap.fromTo(el, 
+              { opacity: 0, y: 30 },
+              {
+                opacity: 1, y: 0, duration: 0.8, ease: 'power2.out',
+                scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
+              }
+            );
+          });
+        });
+      }
+    };
+
+    initAnimations();
+
+    return () => {
+      isMounted = false;
+      if (ctx) ctx.revert();
+    };
+  }, []);
+
+  // Загрузка свадеб
   useEffect(() => {
     const fetchWeddings = async () => {
       const { data } = await supabase.from('weddings').select('*').eq('is_hidden', false).order('created_at', { ascending: false });
       setWeddings(data || []);
     };
     fetchWeddings();
-  }, []);
-
-  // Плавные анимации
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.utils.toArray('.reveal').forEach((el) => {
-        gsap.fromTo(el,
-          { opacity: 0, y: 30 },
-          {
-            opacity: 1, y: 0, duration: 0.8, ease: 'power2.out',
-            scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
-          }
-        );
-      });
-
-      if (window.innerWidth > 768) {
-        gsap.to('.hero-bg', {
-          yPercent: 10,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '.hero-slider',
-            start: 'top top',
-            end: 'bottom top',
-            scrub: 1
-          }
-        });
-      }
-    });
-
-    return () => ctx.revert();
   }, []);
 
   // Слайдер
@@ -106,7 +114,6 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [lightboxOpen, photos.length]);
 
-  // Открытие свадьбы
   const openWedding = async (id) => {
     setLoadingWedding(true);
     setSelectedWedding(id);
@@ -126,7 +133,6 @@ export default function Home() {
       {/* Навигация */}
       <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-white/95 backdrop-blur border-b border-gray-100">
         <a href="#" className="flex items-center">
-          {/* Логотип - локальный файл, используем next/image */}
           <Image src="/logo.png" alt="Creative Studio" width={150} height={50} className="h-10 w-auto" priority />
         </a>
         <ul className="hidden md:flex gap-8 list-none">
@@ -155,17 +161,13 @@ export default function Home() {
         </ul>
       </div>
 
-      {/* Hero - используем CSS background-image, чтобы не ломать next/image */}
+      {/* Hero */}
       <section className="relative h-[80vh] overflow-hidden hero-slider">
         {slides.map((slide, i) => (
           <div
             key={i}
             className={`absolute inset-0 transition-opacity duration-1000 ${i === currentSlide ? 'opacity-100' : 'opacity-0'}`}
-            style={{
-              backgroundImage: `url(${slide.bg})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
+            style={{ backgroundImage: `url(${slide.bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
           >
             <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/50 hero-bg"></div>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4">
@@ -203,7 +205,6 @@ export default function Home() {
             {weddings.map((w) => (
               <div key={w.id} className="cursor-pointer group wedding-card" onClick={() => openWedding(w.id)}>
                 <div className="relative overflow-hidden rounded-xl shadow-lg">
-                  {/* Обложка свадьбы через next/image */}
                   <Image
                     src={w.cover_image}
                     alt={w.title}
@@ -232,7 +233,6 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
             {loadingWedding ? <p className="text-gray-600">Se încarcă...</p> : photos.length === 0 ? <p className="text-gray-600">Nicio fotografie în această nuntă.</p> : photos.map((photo, i) => (
               <div key={photo.id} className="cursor-pointer" onClick={() => openLightbox(i)}>
-                {/* Фото внутри свадьбы через next/image */}
                 <Image
                   src={photo.image_url}
                   alt={photo.caption || 'Fotografie'}
@@ -252,7 +252,6 @@ export default function Home() {
         <div className="fixed inset-0 bg-white z-[9999] flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
           <button className="absolute top-4 right-4 text-black text-4xl hover:text-gray-600 transition z-10" onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}>&times;</button>
           <button className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); prevImage(); }}>‹</button>
-          {/* Фото в лайтбоксе через next/image */}
           <Image
             src={photos[currentPhotoIndex].image_url}
             alt={photos[currentPhotoIndex].caption || 'Fotografie mărită'}
@@ -270,7 +269,6 @@ export default function Home() {
         <h2 className="text-3xl md:text-4xl font-bold mb-8 reveal">Fotograful</h2>
         <div className="flex flex-col md:flex-row items-center justify-center gap-12">
           <div className="w-64 h-64 rounded-full overflow-hidden shadow-lg reveal">
-            {/* Фото фотографа - локальное, используем next/image */}
             <Image src="/logo.png" alt={photographer.name} width={256} height={256} className="w-full h-full object-cover" />
           </div>
           <div className="text-left max-w-2xl reveal">
