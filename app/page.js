@@ -1,15 +1,12 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
 import { supabase } from '../lib/supabase';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-// Ленивая загрузка Lenis
-const LenisProvider = dynamic(() => import('../components/LenisProvider'), { ssr: false });
-// Ленивая загрузка GSAP
-// В основном коде мы будем использовать useEffect, но без прямых импортов gsap/ScrollTrigger
-// Они подтянутся динамически внутри useEffect
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Home() {
   const [weddings, setWeddings] = useState([]);
@@ -20,12 +17,6 @@ export default function Home() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const slides = [
-    { bg: '/photo1.jpg', title: 'Povestea voastră în fiecare cadru' },
-    { bg: '/photo2.jpg', title: 'Momente unice, capturate cu eleganță' },
-    { bg: '/photo3.jpg', title: 'Emoții transformate în artă' },
-  ];
 
   const photographer = {
     name: 'Ursachi Igor',
@@ -39,42 +30,13 @@ export default function Home() {
     tiktok: 'https://www.tiktok.com/@creativestudiomoldova',
   };
 
-  // Ленивая загрузка GSAP и ScrollTrigger только когда они понадобятся
-  useEffect(() => {
-    let ctx;
-    let isMounted = true;
+  const slides = [
+    { bg: '/photo1.jpg', title: 'Povestea voastră în fiecare cadru' },
+    { bg: '/photo2.jpg', title: 'Momente unice, capturate cu eleganță' },
+    { bg: '/photo3.jpg', title: 'Emoții transformate în artă' },
+  ];
 
-    const initAnimations = async () => {
-      if (typeof window === 'undefined') return;
-      // Динамически импортируем gsap
-      const gsap = (await import('gsap')).default;
-      const ScrollTrigger = (await import('gsap/ScrollTrigger')).default;
-      gsap.registerPlugin(ScrollTrigger);
-
-      if (isMounted) {
-        ctx = gsap.context(() => {
-          gsap.utils.toArray('.reveal').forEach((el) => {
-            gsap.fromTo(el, 
-              { opacity: 0, y: 30 },
-              {
-                opacity: 1, y: 0, duration: 0.8, ease: 'power2.out',
-                scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
-              }
-            );
-          });
-        });
-      }
-    };
-
-    initAnimations();
-
-    return () => {
-      isMounted = false;
-      if (ctx) ctx.revert();
-    };
-  }, []);
-
-  // Загрузка свадеб
+  // Загрузка свадеб из Supabase
   useEffect(() => {
     const fetchWeddings = async () => {
       const { data } = await supabase.from('weddings').select('*').eq('is_hidden', false).order('created_at', { ascending: false });
@@ -83,13 +45,41 @@ export default function Home() {
     fetchWeddings();
   }, []);
 
-  // Слайдер
+  // Плавные анимации
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.utils.toArray('.reveal').forEach((el) => {
+        gsap.fromTo(el, 
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1, y: 0, duration: 0.8, ease: 'power2.out',
+            scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
+          }
+        );
+      });
+
+      if (window.innerWidth > 768) {
+        gsap.to('.hero-bg', {
+          yPercent: 10,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.hero-slider',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1
+          }
+        });
+      }
+    });
+
+    return () => ctx.revert();
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => setCurrentSlide((prev) => (prev + 1) % slides.length), 5000);
     return () => clearInterval(interval);
   }, [slides.length]);
 
-  // Лайтбокс
   function openLightbox(index) {
     setCurrentPhotoIndex(index);
     setLightboxOpen(true);
@@ -161,13 +151,17 @@ export default function Home() {
         </ul>
       </div>
 
-      {/* Hero */}
+      {/* Hero Слайдер (Без next/image! Обычный CSS-фон) */}
       <section className="relative h-[80vh] overflow-hidden hero-slider">
         {slides.map((slide, i) => (
           <div
             key={i}
             className={`absolute inset-0 transition-opacity duration-1000 ${i === currentSlide ? 'opacity-100' : 'opacity-0'}`}
-            style={{ backgroundImage: `url(${slide.bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+            style={{
+              backgroundImage: `url(${slide.bg})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
           >
             <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/50 hero-bg"></div>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4">
@@ -205,14 +199,7 @@ export default function Home() {
             {weddings.map((w) => (
               <div key={w.id} className="cursor-pointer group wedding-card" onClick={() => openWedding(w.id)}>
                 <div className="relative overflow-hidden rounded-xl shadow-lg">
-                  <Image
-                    src={w.cover_image}
-                    alt={w.title}
-                    width={800}
-                    height={600}
-                    className="w-full h-64 object-cover transition duration-500 group-hover:scale-110"
-                    loading="lazy"
-                  />
+                  <Image src={w.cover_image} alt={w.title} width={800} height={600} className="w-full h-64 object-cover transition duration-500 group-hover:scale-110" loading="lazy" />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center">
                     <span className="text-white text-xl font-bold px-4 text-center">{w.title}</span>
                   </div>
@@ -233,14 +220,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
             {loadingWedding ? <p className="text-gray-600">Se încarcă...</p> : photos.length === 0 ? <p className="text-gray-600">Nicio fotografie în această nuntă.</p> : photos.map((photo, i) => (
               <div key={photo.id} className="cursor-pointer" onClick={() => openLightbox(i)}>
-                <Image
-                  src={photo.image_url}
-                  alt={photo.caption || 'Fotografie'}
-                  width={600}
-                  height={400}
-                  className="w-full h-48 object-cover rounded-lg shadow-sm"
-                  loading="lazy"
-                />
+                <Image src={photo.image_url} alt={photo.caption || 'Fotografie'} width={600} height={400} className="w-full h-48 object-cover rounded-lg shadow-sm" loading="lazy" />
               </div>
             ))}
           </div>
@@ -252,14 +232,7 @@ export default function Home() {
         <div className="fixed inset-0 bg-white z-[9999] flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
           <button className="absolute top-4 right-4 text-black text-4xl hover:text-gray-600 transition z-10" onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}>&times;</button>
           <button className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); prevImage(); }}>‹</button>
-          <Image
-            src={photos[currentPhotoIndex].image_url}
-            alt={photos[currentPhotoIndex].caption || 'Fotografie mărită'}
-            width={1600}
-            height={1200}
-            className="max-w-[95%] max-h-[95%] w-auto h-auto object-contain rounded-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <Image src={photos[currentPhotoIndex].image_url} alt={photos[currentPhotoIndex].caption || 'Fotografie mărită'} width={1600} height={1200} className="max-w-[95%] max-h-[95%] w-auto h-auto object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
           <button className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); nextImage(); }}>›</button>
         </div>
       )}
