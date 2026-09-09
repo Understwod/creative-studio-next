@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from './LanguageContext';
 
-// ===== ИСПРАВЛЕННЫЙ КОМПОНЕНТ PIXEL PRELOADER =====
+// ===== КОМПОНЕНТ PIXEL PRELOADER (исправленный) =====
 function PixelPreloader({ onFinish }) {
   const canvasRef = useRef(null);
   const [show, setShow] = useState(true);
@@ -17,7 +17,6 @@ function PixelPreloader({ onFinish }) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
-    // Устанавливаем размер канваса
     const setCanvasSize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -28,7 +27,6 @@ function PixelPreloader({ onFinish }) {
     const img = new Image();
     img.src = '/logo.png';
     img.onload = () => {
-      // Создаём временный канвас для получения пикселей логотипа
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = img.width;
       tempCanvas.height = img.height;
@@ -37,11 +35,9 @@ function PixelPreloader({ onFinish }) {
       const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
 
       const particles = [];
-      // Смещение для центрирования логотипа на экране
       const offsetX = (canvas.width - img.width) / 2;
       const offsetY = (canvas.height - img.height) / 2;
 
-      // Создаём частицы из пикселей логотипа
       for (let y = 0; y < img.height; y += pixelSize) {
         for (let x = 0; x < img.width; x += pixelSize) {
           const data = imageData.data;
@@ -52,7 +48,7 @@ function PixelPreloader({ onFinish }) {
           const a = data[index + 3];
           if (a > 128) {
             particles.push({
-              targetX: x + offsetX, // смещённые координаты
+              targetX: x + offsetX,
               targetY: y + offsetY,
               x: Math.random() * canvas.width,
               y: Math.random() * canvas.height,
@@ -109,7 +105,6 @@ function PixelPreloader({ onFinish }) {
       requestAnimationFrame(animate);
     };
 
-    // Если логотип не загрузился, скрываем прелоадер через 2 секунды
     img.onerror = () => {
       setTimeout(() => {
         setShow(false);
@@ -141,10 +136,8 @@ export default function Home() {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Состояние прелоадера
   const [preloaderFinished, setPreloaderFinished] = useState(false);
 
-  // Переводы
   const t = {
     ro: {
       nav: { despre: 'Despre', nunti: 'Nunți', fotograf: 'Fotograf', servicii: 'Servicii', contact: 'Contact' },
@@ -197,7 +190,6 @@ export default function Home() {
     tiktok: 'https://www.tiktok.com/@creativestudiomoldova',
   };
 
-  // Загрузка свадеб
   useEffect(() => {
     const fetchWeddings = async () => {
       const { data } = await supabase.from('weddings').select('*').eq('is_hidden', false).order('created_at', { ascending: false });
@@ -206,13 +198,11 @@ export default function Home() {
     fetchWeddings();
   }, []);
 
-  // Слайдер
   useEffect(() => {
     const interval = setInterval(() => setCurrentSlide((prev) => (prev + 1) % slides.length), 5000);
     return () => clearInterval(interval);
   }, [slides.length]);
 
-  // Лайтбокс
   function openLightbox(index) {
     setCurrentPhotoIndex(index);
     setLightboxOpen(true);
