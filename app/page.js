@@ -4,31 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from './LanguageContext';
-
-// ===== БЕЗОПАСНЫЙ CSS ПРЕЛОАДЕР (Без canvas!) =====
-function SimplePreloader({ onFinish }) {
-  const [show, setShow] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShow(false);
-      onFinish();
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []); // Пустые зависимости - это критически важно, чтобы не запускался бесконечно!
-
-  if (!show) return null;
-
-  return (
-    <div className="fixed inset-0 z-[10000] bg-white flex flex-col items-center justify-center">
-      <div className="animate-pulse">
-        <Image src="/logo.png" alt="Creative Studio" width={250} height={80} className="object-contain" priority />
-      </div>
-      <div className="mt-6 w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-      <p className="mt-4 text-gray-400 text-sm">Se încarcă...</p>
-    </div>
-  );
-}
+import PixelPreloader from '../components/PixelPreloader';
 
 export default function Home() {
   const { language, changeLanguage } = useLanguage();
@@ -40,9 +16,9 @@ export default function Home() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-
   const [preloaderFinished, setPreloaderFinished] = useState(false);
 
+  // Полные переводы (они уже были у вас, вставьте свои, если отличаются)
   const t = {
     ro: {
       nav: { despre: 'Despre', nunti: 'Nunți', fotograf: 'Fotograf', servicii: 'Servicii', contact: 'Contact' },
@@ -147,7 +123,7 @@ export default function Home() {
   return (
     <>
       {!preloaderFinished && (
-        <SimplePreloader onFinish={() => setPreloaderFinished(true)} />
+        <PixelPreloader onFinish={() => setPreloaderFinished(true)} />
       )}
       <main>
         {/* Навигация */}
