@@ -26,11 +26,31 @@ export default function Home() {
       ],
       despre: { title: 'Despre noi', subtitle: 'De peste 5 ani creăm amintiri de neuitat pentru cupluri din Moldova și România.', stats: [{ title: 'Experiență', text: 'Peste 300 de nunți filmate' }, { title: 'Stil unic', text: 'Luminos, natural, emoționant' }, { title: 'Termene rapide', text: 'Fotografii gata în 2 luni' }] },
       weddings: { title: 'Nunțile noastre', subtitle: 'Alege o nuntă pentru a vedea toate fotografiile', empty: 'Nicio nuntă adăugată încă.', loading: 'Se încarcă...', noPhotos: 'Nicio fotografie în această nuntă.' },
-      photographer: { title: 'Fotograful', name: 'Ursachi Igor', brand: 'Creative Studio', bio: 'Sunt Igor, fondator al Creative Studio...', location: 'Activează în Chișinău...' },
-      services: { title: 'Pachete Disponibile', subtitle: 'Alege pachetul perfect pentru nunta ta', packages: [] },
+      photographer: { title: 'Fotograful', name: 'Ursachi Igor', brand: 'Creative Studio', bio: 'Sunt Igor, fondator al Creative Studio, și de peste un deceniu mă dedic artei fotografice. Cu expertiză în nunți, evenimente private, precum și sesiuni foto personale și de familie, transform fiecare moment într-o poveste vizuală captivantă.', location: 'Activează în Chișinău; disponibil să călătorească în întreaga Moldovă și Europa.' },
+      services: { title: 'Pachete Disponibile', subtitle: 'Alege pachetul perfect pentru nunta ta', packages: [
+        { name: 'Essential Story', price: '1.000 €', currency: 'de la', features: ['1 fotograf profesionist', 'Galerie online privată', 'Editare JPG profesională', 'Min. 800 foto editate', 'Livrare link + USB', 'Termen livrare: 5 luni'], notIncluded: ['Preview 48h'] },
+        { name: 'Eternal Story', price: '1.300 €', currency: 'de la', features: ['Fotograf + asistent', 'Preview 48h', 'Min. 1.000 foto editate', 'Termen livrare: 3 luni'], notIncluded: ['Album foto premium'] },
+        { name: 'Heirloom Story', price: '2.200 €', currency: 'de la', features: ['2 Fotografi + asistent', 'Preview 48h', 'Sesiune foto after wedding', 'Album foto premium inclus', 'Min. 1.200 foto editate', 'Termen livrare: 2 luni'], notIncluded: [] },
+      ] },
       contact: { title: 'Contactează-ne', subtitle: 'Pentru rezervări și informații suplimentare ne contactați' },
     },
-    en: { ... } // Пропускаю полный дубль для краткости, используйте текущий словарь
+    en: {
+      nav: { despre: 'About', nunti: 'Weddings', fotograf: 'Photographer', servicii: 'Services', contact: 'Contact' },
+      hero: [
+        { title: 'Your story in every frame' },
+        { title: 'Unique moments captured with elegance' },
+        { title: 'Emotions turned into art' },
+      ],
+      despre: { title: 'About us', subtitle: 'For over 5 years we have been creating unforgettable memories for couples from Moldova and Romania.', stats: [{ title: 'Experience', text: 'Over 300 weddings filmed' }, { title: 'Unique style', text: 'Bright, natural, emotional' }, { title: 'Fast turnaround', text: 'Photos ready in 2 months' }] },
+      weddings: { title: 'Our weddings', subtitle: 'Choose a wedding to see all photos', empty: 'No weddings added yet.', loading: 'Loading...', noPhotos: 'No photos in this wedding.' },
+      photographer: { title: 'Photographer', name: 'Ursachi Igor', brand: 'Creative Studio', bio: 'I am Igor, founder of Creative Studio, and for over a decade I have been dedicated to the art of photography. With expertise in weddings, private events, as well as personal and family photo sessions, I transform every moment into a captivating visual story.', location: 'Based in Chisinau; available to travel throughout Moldova and Europe.' },
+      services: { title: 'Available packages', subtitle: 'Choose the perfect package for your wedding', packages: [
+        { name: 'Essential Story', price: '1.000 €', currency: 'from', features: ['1 professional photographer', 'Private online gallery', 'Professional JPG editing', 'Min. 800 edited photos', 'Delivery link + USB', 'Delivery time: 5 months'], notIncluded: ['48h preview'] },
+        { name: 'Eternal Story', price: '1.300 €', currency: 'from', features: ['Photographer + assistant', '48h preview', 'Min. 1.000 edited photos', 'Delivery time: 3 months'], notIncluded: ['Premium album'] },
+        { name: 'Heirloom Story', price: '2.200 €', currency: 'from', features: ['2 Photographers + assistant', '48h preview', 'After wedding photo session', 'Premium album included', 'Min. 1.200 edited photos', 'Delivery time: 2 months'], notIncluded: [] },
+      ] },
+      contact: { title: 'Contact us', subtitle: 'For reservations and additional information, contact us' },
+    },
   };
 
   const currentLang = t[language] || t.ro;
@@ -254,10 +274,25 @@ export default function Home() {
               <a href={`tel:${photographer.phone}`} className="text-blue-600 hover:underline">📞 {photographer.phone}</a>
               <a href={`mailto:${photographer.email}`} className="text-blue-600 hover:underline">✉️ {photographer.email}</a>
             </div>
-            <div className="flex flex-wrap gap-4 mt-6">
-              <a href={photographer.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Instagram</a>
-              <a href={photographer.facebook} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Facebook</a>
-              <a href={photographer.tiktok} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">TikTok</a>
+            {/* Иконки соцсетей */}
+            <div className="flex gap-4 mt-6">
+              <a href={photographer.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center transition-transform hover:scale-110" aria-label="Instagram">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+              </a>
+              <a href={photographer.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center transition-transform hover:scale-110" aria-label="Facebook">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                </svg>
+              </a>
+              <a href={photographer.tiktok} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-black flex items-center justify-center transition-transform hover:scale-110" aria-label="TikTok">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                  <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path>
+                </svg>
+              </a>
             </div>
           </div>
         </div>
@@ -299,21 +334,36 @@ export default function Home() {
             <p className="text-gray-500 mb-2">📞 <a href={`tel:${photographer.phone}`} className="text-blue-600 hover:underline">{photographer.phone}</a></p>
             <p className="text-gray-500 mb-2">✉️ <a href={`mailto:${photographer.email}`} className="text-blue-600 hover:underline">{photographer.email}</a></p>
             <p className="text-gray-500 mb-2">📍 {photographer.location}</p>
+            {/* Иконки соцсетей */}
             <div className="flex gap-4 mt-4">
-              <a href={photographer.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Instagram</a>
-              <a href={photographer.facebook} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Facebook</a>
-              <a href={photographer.tiktok} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">TikTok</a>
+              <a href={photographer.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center transition-transform hover:scale-110" aria-label="Instagram">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+              </a>
+              <a href={photographer.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center transition-transform hover:scale-110" aria-label="Facebook">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                </svg>
+              </a>
+              <a href={photographer.tiktok} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-black flex items-center justify-center transition-transform hover:scale-110" aria-label="TikTok">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                  <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path>
+                </svg>
+              </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Футер (убран лишний ряд ссылок) */}
+      {/* Футер */}
       <footer className="bg-gray-50 py-8 text-center text-gray-500">
         <p>© 2026 Creative Studio. Toate drepturile rezervate.</p>
       </footer>
 
-      {/* Плавающие кнопки для мобильных (возвращены) */}
+      {/* Плавающие кнопки для мобильных */}
       <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4 md:hidden">
         <a href={`tel:${photographer.phone}`} className="bg-blue-500 text-white p-4 rounded-full shadow-lg hover:bg-blue-600 transition">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
