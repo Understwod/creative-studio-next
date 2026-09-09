@@ -5,22 +5,41 @@ import Image from 'next/image';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from './LanguageContext';
 
-// Встроенный компонент прелоадера
+// Встроенный анимированный прелоадер
 function Preloader() {
+  const [visible, setVisible] = useState(false);
   const [hide, setHide] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setHide(true), 2500);
-    return () => clearTimeout(timer);
+    // Появление логотипа
+    const timer1 = setTimeout(() => setVisible(true), 100);
+    // Исчезновение всего прелоадера через 2.5 секунды
+    const timer2 = setTimeout(() => setHide(true), 2500);
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
   }, []);
 
   return (
-    <div className={`fixed inset-0 z-[10000] flex items-center justify-center bg-white transition-opacity duration-700 ${hide ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-      <div className="text-center">
-        <h1 className="text-4xl md:text-6xl font-bold text-gray-900 tracking-tight">
-          Creative <span className="text-blue-500">Studio</span>
-        </h1>
-        <p className="text-gray-400 mt-2 animate-pulse">Fotografie & Videografie</p>
+    <div
+      className={`fixed inset-0 z-[10000] flex items-center justify-center bg-white transition-opacity duration-700 ${
+        hide ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}
+    >
+      <div
+        className={`transform transition-all duration-700 ${
+          visible ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+        }`}
+      >
+        <Image
+          src="/logo.png"
+          alt="Creative Studio"
+          width={300}
+          height={100}
+          className="object-contain"
+          priority
+        />
       </div>
     </div>
   );
