@@ -1,50 +1,121 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from './LanguageContext';
 
-// Встроенный анимированный прелоадер
-function Preloader() {
-  const [visible, setVisible] = useState(false);
-  const [hide, setHide] = useState(false);
+// ===== КОМПОНЕНТ PIXEL PRELOADER =====
+function PixelPreloader({ onFinish }) {
+  const canvasRef = useRef(null);
+  const [show, setShow] = useState(true);
+  const pixelSize = 8;
+  const animationDuration = 1500; // время сборки
+  const scatterDuration = 600; // время разлёта
 
   useEffect(() => {
-    // Появление логотипа
-    const timer1 = setTimeout(() => setVisible(true), 100);
-    // Исчезновение всего прелоадера через 2.5 секунды
-    const timer2 = setTimeout(() => setHide(true), 2500);
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    const setCanvasSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
-  }, []);
+    setCanvasSize();
+    window.addEventListener('resize', setCanvasSize);
+
+    const img = new Image();
+    img.src = '/logo.png';
+    img.onload = () => {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = img.width;
+      tempCanvas.height = img.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(img, 0, 0);
+      const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
+
+      const particles = [];
+
+      for (let y = 0; y < img.height; y += pixelSize) {
+        for (let x = 0; x < img.width; x += pixelSize) {
+          const data = imageData.data;
+          const index = (y * img.width + x) * 4;
+          const r = data[index];
+          const g = data[index + 1];
+          const b = data[index + 2];
+          const a = data[index + 3];
+          if (a > 128) {
+            particles.push({
+              targetX: x,
+              targetY: y,
+              x: Math.random() * canvas.width,
+              y: Math.random() * canvas.height,
+              color: `rgb(${r},${g},${b})`,
+              speed: Math.random() * 0.05 + 0.02,
+              size: pixelSize
+            });
+          }
+        }
+      }
+
+      let startTime = null;
+      let scattering = false;
+
+      const animate = (timestamp) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        particles.forEach(particle => {
+          if (!scattering) {
+            const dx = particle.targetX - particle.x;
+            const dy = particle.targetY - particle.y;
+            particle.x += dx * particle.speed;
+            particle.y += dy * particle.speed;
+          } else {
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+          }
+
+          ctx.fillStyle = particle.color;
+          ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
+        });
+
+        if (elapsed < animationDuration) {
+          requestAnimationFrame(animate);
+        } else if (!scattering) {
+          scattering = true;
+          startTime = timestamp;
+          particles.forEach(particle => {
+            particle.vx = (Math.random() - 0.5) * 4;
+            particle.vy = (Math.random() - 0.5) * 4;
+          });
+          requestAnimationFrame(animate);
+        } else if (elapsed < animationDuration + scatterDuration) {
+          requestAnimationFrame(animate);
+        } else {
+          setShow(false);
+          onFinish();
+        }
+      };
+
+      requestAnimationFrame(animate);
+    };
+
+    return () => window.removeEventListener('resize', setCanvasSize);
+  }, [onFinish]);
+
+  if (!show) return null;
 
   return (
-    <div
-      className={`fixed inset-0 z-[10000] flex items-center justify-center bg-white transition-opacity duration-700 ${
-        hide ? 'opacity-0 pointer-events-none' : 'opacity-100'
-      }`}
-    >
-      <div
-        className={`transform transition-all duration-700 ${
-          visible ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
-        }`}
-      >
-        <Image
-          src="/logo.png"
-          alt="Creative Studio"
-          width={300}
-          height={100}
-          className="object-contain"
-          priority
-        />
-      </div>
+    <div className="fixed inset-0 z-[10000] bg-white flex items-center justify-center">
+      <canvas ref={canvasRef} className="w-full h-full" />
     </div>
   );
 }
 
+// ===== ГЛАВНЫЙ КОМПОНЕНТ =====
 export default function Home() {
   const { language, changeLanguage } = useLanguage();
   const [weddings, setWeddings] = useState([]);
@@ -56,6 +127,10 @@ export default function Home() {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Состояние прелоадера
+  const [preloaderFinished, setPreloaderFinished] = useState(false);
+
+  // Переводы
   const t = {
     ro: {
       nav: { despre: 'Despre', nunti: 'Nunți', fotograf: 'Fotograf', servicii: 'Servicii', contact: 'Contact' },
@@ -108,6 +183,7 @@ export default function Home() {
     tiktok: 'https://www.tiktok.com/@creativestudiomoldova',
   };
 
+  // Загрузка свадеб
   useEffect(() => {
     const fetchWeddings = async () => {
       const { data } = await supabase.from('weddings').select('*').eq('is_hidden', false).order('created_at', { ascending: false });
@@ -116,11 +192,13 @@ export default function Home() {
     fetchWeddings();
   }, []);
 
+  // Слайдер
   useEffect(() => {
     const interval = setInterval(() => setCurrentSlide((prev) => (prev + 1) % slides.length), 5000);
     return () => clearInterval(interval);
   }, [slides.length]);
 
+  // Лайтбокс
   function openLightbox(index) {
     setCurrentPhotoIndex(index);
     setLightboxOpen(true);
@@ -159,7 +237,9 @@ export default function Home() {
 
   return (
     <>
-      <Preloader />
+      {!preloaderFinished && (
+        <PixelPreloader onFinish={() => setPreloaderFinished(true)} />
+      )}
       <main>
         {/* Навигация */}
         <nav className="fixed top-0 left-0 w-full z-50 bg-white/95 backdrop-blur border-b border-gray-200">
