@@ -1,72 +1,61 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
-import Image from 'next/image';
-
-// Красивый компонент Toast с иконкой
-function Toast({ message, onClose }) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
-    <div className="fixed bottom-6 right-6 z-50 bg-emerald-500 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-2">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      {message}
-    </div>
-  );
-}
 
 export default function AdminPage() {
+  // Статус входа и пароль (простое решение, можно потом усложнить)
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
-  const [toast, setToast] = useState('');
+  const [activeSection, setActiveSection] = useState('weddings'); // weddings, photographer, settings
 
-  // Состояния для свадеб
+  // Данные для свадеб
   const [weddings, setWeddings] = useState([]);
   const [selectedWedding, setSelectedWedding] = useState(null);
   const [title, setTitle] = useState('');
   const [coverFile, setCoverFile] = useState(null);
   const [files, setFiles] = useState([]);
-  const [previews, setPreviews] = useState([]);
+  const [previews, setPreviews] = useState([]); // Для предпросмотра
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Состояния для профиля фотографа
+  // Для drag & drop
+  const fileInputRef = useRef(null);
+  const coverInputRef = useRef(null);
+
+  // Данные фотографа
   const [photographer, setPhotographer] = useState({
     name: '',
     bio: '',
     instagram: '',
     facebook: '',
     tiktok: '',
-    phone: '',
-    email: ''
   });
 
-  // Проверка авторизации
-  useEffect(() => {
-    if (localStorage.getItem('adminAuth') === 'true') setAuthenticated(true);
-  }, []);
+  // Toast уведомления
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
+  // Логин (пока оставляем как есть, безопасность потом)
   const handleLogin = (e) => {
     e.preventDefault();
     if (password === 'secret123') {
       localStorage.setItem('adminAuth', 'true');
       setAuthenticated(true);
     } else {
-      setToast('Parolă greșită!');
+      showToast('Parolă greșită!', 'error');
     }
   };
 
-  // Загрузка данных при входе
   useEffect(() => {
-    if (!authenticated) return;
-    loadWeddings();
-    loadPhotographer();
+    if (localStorage.getItem('adminAuth') === 'true') setAuthenticated(true);
+  }, []);
+
+  useEffect(() => {
+    if (authenticated) loadWeddings();
   }, [authenticated]);
 
   const loadWeddings = async () => {
@@ -74,347 +63,360 @@ export default function AdminPage() {
     setWeddings(data || []);
   };
 
-  const loadPhotographer = async () => {
-    const { data } = await supabase.from('photographer').select('*').limit(1);
-    if (data && data[0]) setPhotographer(data[0]);
-  };
-
-  // Drag & Drop для файлов
-  const handleFileDrop = (e) => {
-    e.preventDefault();
-    if (e.dataTransfer.files.length > 0) {
-      const droppedFiles = Array.from(e.dataTransfer.files);
-      setFiles((prev) => [...prev, ...droppedFiles]);
-      setPreviews((prev) => [...prev, ...droppedFiles.map((file) => URL.createObjectURL(file))]);
-    }
-  };
-
-  const handleFileSelect = (e) => {
-    const selected = Array.from(e.target.files);
-    setFiles((prev) => [...prev, ...selected]);
-    setPreviews((prev) => [...prev, ...selected.map((file) => URL.createObjectURL(file))]);
-  };
-
-  // Создание свадьбы
+  // Создание новой свадьбы
   const createWedding = async (e) => {
     e.preventDefault();
     if (!title || !coverFile) {
-      setToast('Completează numele și alege o poză de copertă!');
+      showToast('Te rugăm să adaugi numele și coperta!', 'error');
       return;
     }
+
     setLoading(true);
-    const fileName = `${Date.now()}_${coverFile.name}`;
-    const { error: uploadError } = await supabase.storage.from('photos').upload(fileName, coverFile);
+    const coverFileName = `${Date.now()}_${coverFile.name}`;
+    const { error: uploadError } = await supabase.storage.from('photos').upload(coverFileName, coverFile);
+
     if (uploadError) {
-      setToast('Eroare la upload: ' + uploadError.message);
+      showToast(uploadError.message, 'error');
       setLoading(false);
       return;
     }
-    const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName);
-    await supabase.from('weddings').insert({ title, cover_image: urlData.publicUrl });
-    setToast('Nunta a fost creată!');
-    setTitle('');
-    setCoverFile(null);
-    loadWeddings();
+
+    const { data: urlData } = supabase.storage.from('photos').getPublicUrl(coverFileName);
+    const { error: insertError } = await supabase.from('weddings').insert({ title, cover_image: urlData.publicUrl });
+
+    if (insertError) {
+      showToast(insertError.message, 'error');
+    } else {
+      showToast('Nunta a fost creată!');
+      setTitle('');
+      setCoverFile(null);
+      loadWeddings();
+    }
     setLoading(false);
   };
 
-  // Загрузка фото в свадьбу (drag & drop)
+  // Загрузка фотографий (Drag-and-Drop)
+  const handleFiles = (selectedFiles) => {
+    const fileArray = Array.from(selectedFiles);
+    setFiles(fileArray);
+    // Создаём предпросмотры
+    const urls = fileArray.map(file => URL.createObjectURL(file));
+    setPreviews(urls);
+  };
+
   const uploadPhotos = async (e) => {
     e.preventDefault();
     if (!files.length || !selectedWedding) {
-      setToast('Alege sau trage fotografii!');
+      showToast('Alege o nuntă și selectează fotografii', 'error');
       return;
     }
+
     setLoading(true);
     for (const file of files) {
       const fileName = `${Date.now()}_${file.name}`;
-      const { error } = await supabase.storage.from('photos').upload(fileName, file);
-      if (error) {
-        setToast('Eroare la upload: ' + error.message);
-        setLoading(false);
-        return;
-      }
+      const { error: uploadError } = await supabase.storage.from('photos').upload(fileName, file);
+      if (uploadError) { showToast(uploadError.message, 'error'); setLoading(false); return; }
+
       const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName);
       await supabase.from('photos').insert({ wedding_id: selectedWedding, image_url: urlData.publicUrl, caption });
     }
-    setToast('Fotografiile au fost adăugate!');
+
+    showToast('Fotografiile au fost adăugate!');
     setFiles([]);
     setPreviews([]);
     setCaption('');
     setLoading(false);
   };
 
-  // Сохранение профиля фотографа
-  const savePhotographer = async (e) => {
-    e.preventDefault();
-    await supabase.from('photographer').upsert(photographer);
-    setToast('Profil salvat!');
-    loadPhotographer();
+  // Удаление фото
+  const deletePhoto = async (photoId) => {
+    await supabase.from('photos').delete().eq('id', photoId);
+    loadPhotosForWedding(selectedWedding);
   };
 
-  // Drag & Drop сортировка свадеб
-  const [dragIndex, setDragIndex] = useState(null);
-
-  const handleDragStart = (index) => {
-    setDragIndex(index);
+  // Загрузка фото для конкретной свадьбы
+  const loadPhotosForWedding = async (weddingId) => {
+    const { data } = await supabase.from('photos').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false });
+    setPhotos(data || []);
   };
 
-  const handleDragOver = (e, index) => {
-    e.preventDefault();
-    if (dragIndex === null) return;
-    const newWeddings = [...weddings];
-    const draggedItem = newWeddings[dragIndex];
-    newWeddings.splice(dragIndex, 1);
-    newWeddings.splice(index, 0, draggedItem);
-    setWeddings(newWeddings);
-    setDragIndex(index);
+  // Состояние для фото
+  const [photos, setPhotos] = useState([]);
+
+  const openWedding = async (id) => {
+    setSelectedWedding(id);
+    await loadPhotosForWedding(id);
   };
 
-  const handleDragEnd = async () => {
-    setDragIndex(null);
-    // Обновляем порядок в базе данных (сохраняем порядок, меняя поле created_at)
-    for (let i = 0; i < weddings.length; i++) {
-      await supabase.from('weddings').update({ created_at: new Date(Date.now() - i * 1000).toISOString() }).eq('id', weddings[i].id);
-    }
+  const closeWedding = () => {
+    setSelectedWedding(null);
+    setPhotos([]);
+  };
+
+  // Удаление свадьбы
+  const deleteWedding = async (id) => {
+    await supabase.from('weddings').delete().eq('id', id);
+    if (selectedWedding === id) setSelectedWedding(null);
     loadWeddings();
+  };
+
+  // Скрытие/показ свадьбы
+  const toggleHidden = async (id, currentValue) => {
+    await supabase.from('weddings').update({ is_hidden: !currentValue }).eq('id', id);
+    loadWeddings();
+  };
+
+  // Редактирование названия
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+
+  const startEdit = (wedding) => {
+    setEditingId(wedding.id);
+    setEditTitle(wedding.title);
+  };
+
+  const saveEdit = async (id) => {
+    await supabase.from('weddings').update({ title: editTitle }).eq('id', id);
+    setEditingId(null);
+    loadWeddings();
+    showToast('Nume actualizat!');
+  };
+
+  // Сортировка (кнопки вверх/вниз)
+  const moveWedding = async (index, direction) => {
+    const newOrder = [...weddings];
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= newOrder.length) return;
+    [newOrder[index], newOrder[newIndex]] = [newOrder[newIndex], newOrder[index]];
+    setWeddings(newOrder);
+    // Здесь можно отправить новый порядок в базу данных
+    // ... (логика сохранения порядка в Supabase может быть добавлена отдельно)
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminAuth');
+    setAuthenticated(false);
   };
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="white" className="w-8 h-8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Admin Login</h1>
-            <p className="text-gray-500 mt-2">Introdu parola pentru a continua</p>
-          </div>
-          <input
-            type="password"
-            placeholder="Parolă"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full mb-4 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            required
-          />
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium transition-all">
-            Intră
-          </button>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full">
+          <h1 className="text-2xl font-bold mb-6 text-center">Admin Login</h1>
+          <input type="password" placeholder="Parolă" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full mb-4 p-3 border rounded-lg" required />
+          <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium">Intră</button>
         </form>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      {toast && <Toast message={toast} onClose={() => setToast('')} />}
-
-      {/* Шапка с красивым логотипом */}
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-3">
-          <Image src="/logo.png" alt="Creative Studio" width={50} height={50} className="rounded-full" />
-          <h1 className="text-2xl font-bold text-gray-900">Admin Panou</h1>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Боковая навигация (Sidebar) */}
+      <aside className="w-64 bg-white shadow-md hidden md:flex flex-col p-4">
+        <div className="flex items-center justify-center mb-8">
+          <img src="/logo.png" alt="Creative Studio" className="h-10 w-auto" />
         </div>
-        <button
-          onClick={() => {
-            localStorage.removeItem('adminAuth');
-            setAuthenticated(false);
-          }}
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
-        >
+        <nav className="space-y-2">
+          <button onClick={() => setActiveSection('weddings')} className={`w-full text-left p-3 rounded-lg transition ${activeSection === 'weddings' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>
+            <span className="font-medium">💍 Nunți</span>
+          </button>
+          <button onClick={() => setActiveSection('photographer')} className={`w-full text-left p-3 rounded-lg transition ${activeSection === 'photographer' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>
+            <span className="font-medium">📸 Fotograf</span>
+          </button>
+          <button onClick={() => setActiveSection('settings')} className={`w-full text-left p-3 rounded-lg transition ${activeSection === 'settings' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>
+            <span className="font-medium">⚙️ Setări</span>
+          </button>
+        </nav>
+        <button onClick={handleLogout} className="mt-auto bg-red-100 text-red-600 p-3 rounded-lg font-medium hover:bg-red-200 transition">
           Deconectare
         </button>
-      </div>
+      </aside>
 
-      {/* Вкладки */}
-      <div className="flex gap-2 mb-8 bg-white p-1 rounded-xl shadow-sm">
-        <button
-          onClick={() => setTab('weddings')}
-          className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-            tab === 'weddings' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          Nunți
-        </button>
-        <button
-          onClick={() => setTab('photographer')}
-          className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-            tab === 'photographer' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          Profil
-        </button>
-      </div>
-
-      {tab === 'weddings' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Создание свадьбы */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-              <span className="bg-blue-100 p-2 rounded-lg text-blue-600">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-              </span>
-              Adaugă Nuntă
-            </h2>
-            <form onSubmit={createWedding}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Numele cuplului</label>
-                <input
-                  type="text"
-                  placeholder="ex: Maria & Ion"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Poză de copertă</label>
-                <input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files[0])} className="w-full p-2 border border-gray-300 rounded-xl" />
-              </div>
-              <button type="submit" disabled={loading} className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                Adaugă
-              </button>
-            </form>
+      {/* Основной контент */}
+      <div className="flex-1 p-6 overflow-y-auto">
+        {/* Toast уведомления */}
+        {toast && (
+          <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg text-white font-medium ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
+            {toast.message}
           </div>
+        )}
 
-          {/* Список свадеб с drag-and-drop сортировкой */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-semibold mb-6">Nunțile existente</h2>
-            <p className="text-sm text-gray-500 mb-4">Ține apăsat și trage pentru a schimba ordinea</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {/* СЕКЦИЯ: СВАДЬБЫ */}
+        {activeSection === 'weddings' && (
+          <div>
+            <h1 className="text-2xl font-bold mb-6">Gestionare Nunți</h1>
+            
+            {/* Создание свадьбы */}
+            <div className="bg-white p-6 rounded-xl shadow mb-8">
+              <h2 className="text-lg font-semibold mb-4">Adaugă Nuntă Nouă</h2>
+              <form onSubmit={createWedding}>
+                <div className="mb-4">
+                  <input type="text" placeholder="Numele cuplului (ex: Maria & Ion)" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full p-3 border rounded-lg" required />
+                </div>
+                <div className="mb-4">
+                  <label className="block mb-2 text-sm font-medium text-gray-600">Alege poză de copertă</label>
+                  <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 transition"
+                    onClick={() => coverInputRef.current.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
+                  >
+                    <input type="file" ref={coverInputRef} accept="image/*" onChange={(e) => setCoverFile(e.target.files[0])} className="hidden" />
+                    {coverFile ? (
+                      <img src={URL.createObjectURL(coverFile)} alt="Cover" className="max-h-32 mx-auto rounded-lg" />
+                    ) : (
+                      <p className="text-gray-500">Trage o poză aici sau click pentru a alege</p>
+                    )}
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="bg-green-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">
+                  {loading ? 'Se încarcă...' : '+ Adaugă Nuntă'}
+                </button>
+              </form>
+            </div>
+
+            {/* Список свадеб с сортировкой */}
+            <h2 className="text-lg font-semibold mb-4">Nunțile existente</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {weddings.map((w, index) => (
-                <div
-                  key={w.id}
-                  draggable
-                  onDragStart={() => handleDragStart(index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragEnd={handleDragEnd}
-                  className={`border-2 rounded-xl p-4 cursor-grab transition-all ${
-                    selectedWedding === w.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-gray-200'
-                  } ${dragIndex === index ? 'opacity-50' : ''}`}
-                  onClick={() => setSelectedWedding(w.id)}
-                >
+                <div key={w.id} className={`bg-white p-4 rounded-xl shadow cursor-pointer transition ${selectedWedding === w.id ? 'border-2 border-blue-500' : 'border border-gray-200'}`} onClick={() => openWedding(w.id)}>
                   <img src={w.cover_image} alt={w.title} className="w-full h-40 object-cover rounded-lg mb-3" />
-                  <p className="font-semibold text-gray-900">{w.title}</p>
-                  <div className="flex justify-between mt-3">
-                    <span className="text-sm text-blue-500">Încarcă foto</span>
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        await supabase.from('weddings').delete().eq('id', w.id);
-                        loadWeddings();
-                      }}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-                    </button>
+                  
+                  {/* Редактирование названия */}
+                  {editingId === w.id ? (
+                    <div className="mb-2">
+                      <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full p-2 border rounded" />
+                      <button onClick={(e) => { e.stopPropagation(); saveEdit(w.id); }} className="bg-blue-500 text-white text-xs px-3 py-1 rounded mt-2">Salvează</button>
+                      <button onClick={(e) => { e.stopPropagation(); setEditingId(null); }} className="text-xs text-gray-500 ml-2">Anulează</button>
+                    </div>
+                  ) : (
+                    <p className="font-semibold text-center mb-2">{w.title}</p>
+                  )}
+
+                  <div className="flex justify-between items-center text-xs">
+                    {/* Кнопки сортировки */}
+                    <div className="flex gap-1">
+                      <button onClick={(e) => { e.stopPropagation(); moveWedding(index, -1); }} className="bg-gray-200 p-1 rounded hover:bg-gray-300">↑</button>
+                      <button onClick={(e) => { e.stopPropagation(); moveWedding(index, 1); }} className="bg-gray-200 p-1 rounded hover:bg-gray-300">↓</button>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={(e) => { e.stopPropagation(); toggleHidden(w.id, w.is_hidden); }} className={`px-2 py-1 rounded ${w.is_hidden ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {w.is_hidden ? 'Ascunde' : 'Arată'}
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); startEdit(w); }} className="bg-blue-100 text-blue-600 px-2 py-1 rounded">
+                        ✏️
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); deleteWedding(w.id); }} className="bg-red-100 text-red-600 px-2 py-1 rounded">
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Drag & Drop загрузка фото */}
+            {/* Загрузка фото в выбранную свадьбу */}
             {selectedWedding && (
-              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                <h3 className="font-semibold mb-4 text-gray-900">
-                  Încarcă foto în: {weddings.find((w) => w.id === selectedWedding)?.title}
-                </h3>
-                <div
+              <div className="bg-white p-6 rounded-xl shadow mb-8">
+                <h2 className="text-lg font-semibold mb-4">Încarcă foto în: {weddings.find(w => w.id === selectedWedding)?.title}</h2>
+                
+                <div 
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 transition mb-4"
+                  onClick={() => fileInputRef.current.click()}
                   onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleFileDrop}
-                  className="border-2 border-dashed border-blue-300 bg-white p-8 rounded-xl text-center cursor-pointer hover:bg-blue-50 transition-colors"
+                  onDrop={(e) => { e.preventDefault(); const dropped = e.dataTransfer.files; handleFiles(dropped); }}
                 >
-                  <div className="flex flex-col items-center gap-2 text-gray-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-                    <span>Trage fotografiile aici sau</span>
-                    <input type="file" accept="image/*" multiple onChange={handleFileSelect} className="hidden" id="fileInput" />
-                    <label htmlFor="fileInput" className="text-blue-500 font-medium cursor-pointer underline">alege din calculator</label>
-                  </div>
+                  <input type="file" ref={fileInputRef} accept="image/*" multiple onChange={(e) => handleFiles(e.target.files)} className="hidden" />
+                  <p className="text-gray-500">Trage și lasă aici mai multe fotografii (sau click pentru a alege)</p>
                 </div>
+
                 {previews.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {previews.map((url, idx) => (
-                      <img key={idx} src={url} alt="preview" className="w-20 h-20 object-cover rounded-lg border border-gray-200" />
+                  <div className="grid grid-cols-4 gap-2 mb-4">
+                    {previews.map((url, i) => (
+                      <img key={i} src={url} alt="Preview" className="w-full h-24 object-cover rounded-lg" />
                     ))}
                   </div>
                 )}
-                <div className="mt-4">
-                  <input
-                    type="text"
-                    placeholder="Descriere (ex: Primul dans)"
-                    value={caption}
-                    onChange={(e) => setCaption(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none mb-4"
-                  />
-                  <button
-                    onClick={uploadPhotos}
-                    disabled={loading}
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-                    Upload
-                  </button>
+
+                <div className="mb-4">
+                  <input type="text" placeholder="Descriere pentru toate (ex: Primul dans)" value={caption} onChange={(e) => setCaption(e.target.value)} className="w-full p-3 border rounded-lg" />
+                </div>
+                <button onClick={uploadPhotos} disabled={loading} className="bg-blue-500 text-white px-6 py-2 rounded-lg disabled:opacity-50">
+                  {loading ? 'Se încarcă...' : 'Adaugă fotografiile'}
+                </button>
+              </div>
+            )}
+
+            {/* Показать фото внутри выбранной свадьбы */}
+            {selectedWedding && (
+              <div className="bg-white p-6 rounded-xl shadow">
+                <h2 className="text-lg font-semibold mb-4">Fotografiile adăugate în această nuntă</h2>
+                <div className="grid grid-cols-4 gap-4">
+                  {photos.map(photo => (
+                    <div key={photo.id} className="relative group">
+                      <img src={photo.image_url} alt={photo.caption || 'Foto'} className="w-full h-32 object-cover rounded-lg" />
+                      <button onClick={() => deletePhoto(photo.id)} className="absolute top-1 right-1 bg-red-500 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">
+                        ✕
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {tab === 'photographer' && (
-        <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <span className="bg-blue-100 p-2 rounded-lg text-blue-600">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-            </span>
-            Profil Fotograf
-          </h2>
-          <form onSubmit={savePhotographer} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Nume</label>
-              <input type="text" value={photographer.name} onChange={(e) => setPhotographer({ ...photographer, name: e.target.value })} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        {/* СЕКЦИЯ: ФОТОГРАФ */}
+        {activeSection === 'photographer' && (
+          <div>
+            <h1 className="text-2xl font-bold mb-6">Despre Fotograf</h1>
+            <div className="bg-white p-6 rounded-xl shadow">
+              <div className="mb-4">
+                <label className="block mb-2 text-sm font-medium">Nume</label>
+                <input type="text" value={photographer.name} onChange={(e) => setPhotographer({...photographer, name: e.target.value})} className="w-full p-3 border rounded-lg" />
+              </div>
+              <div className="mb-4">
+                <label className="block mb-2 text-sm font-medium">Descriere</label>
+                <textarea value={photographer.bio} onChange={(e) => setPhotographer({...photographer, bio: e.target.value})} rows="4" className="w-full p-3 border rounded-lg"></textarea>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">Instagram</label>
+                  <input type="text" value={photographer.instagram} onChange={(e) => setPhotographer({...photographer, instagram: e.target.value})} className="w-full p-3 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block mb-2 text-sm font-medium">Facebook</label>
+                  <input type="text" value={photographer.facebook} onChange={(e) => setPhotographer({...photographer, facebook: e.target.value})} className="w-full p-3 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block mb-2 text-sm font-medium">TikTok</label>
+                  <input type="text" value={photographer.tiktok} onChange={(e) => setPhotographer({...photographer, tiktok: e.target.value})} className="w-full p-3 border rounded-lg" />
+                </div>
+              </div>
+              <button className="bg-blue-500 text-white px-6 py-2 rounded-lg">Salvează</button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-              <textarea value={photographer.bio} onChange={(e) => setPhotographer({ ...photographer, bio: e.target.value })} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" rows="4" />
+          </div>
+        )}
+
+        {/* СЕКЦИЯ: НАСТРОЙКИ */}
+        {activeSection === 'settings' && (
+          <div>
+            <h1 className="text-2xl font-bold mb-6">Setări Generale</h1>
+            <div className="bg-white p-6 rounded-xl shadow">
+              <div className="mb-4">
+                <label className="block mb-2 text-sm font-medium">Email de contact</label>
+                <input type="email" className="w-full p-3 border rounded-lg" />
+              </div>
+              <div className="mb-4">
+                <label className="block mb-2 text-sm font-medium">Telefon</label>
+                <input type="tel" className="w-full p-3 border rounded-lg" />
+              </div>
+              <button className="bg-blue-500 text-white px-6 py-2 rounded-lg">Salvează</button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
-                <input type="text" value={photographer.instagram} onChange={(e) => setPhotographer({ ...photographer, instagram: e.target.value })} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
-                <input type="text" value={photographer.facebook} onChange={(e) => setPhotographer({ ...photographer, facebook: e.target.value })} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">TikTok</label>
-                <input type="text" value={photographer.tiktok} onChange={(e) => setPhotographer({ ...photographer, tiktok: e.target.value })} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Telefon</label>
-                <input type="text" value={photographer.phone} onChange={(e) => setPhotographer({ ...photographer, phone: e.target.value })} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input type="text" value={photographer.email} onChange={(e) => setPhotographer({ ...photographer, email: e.target.value })} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-              </div>
-            </div>
-            <button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5-11L1.5 12l5.25 5.25m7.5-11l-5.25 5.25" /></svg>
-              Salvează Profilul
-            </button>
-          </form>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
