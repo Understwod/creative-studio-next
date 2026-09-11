@@ -25,7 +25,7 @@ export default function Home() {
       categories: { nunti: 'Nunți', cununie: 'Cununie', botez: 'Botez', fotosesii: 'Fotosesii' },
       despre: { title: 'Despre noi', subtitle: 'De peste 5 ani creăm amintiri de neuitat pentru cupluri din Moldova și România.', stats: [{ title: 'Experiență', text: 'Peste 300 de nunți filmate' }, { title: 'Stil unic', text: 'Luminos, natural, emoționant' }, { title: 'Termene rapide', text: 'Fotografii gata în 2 luni' }] },
       gallery: { title: 'Galerie', subtitle: 'Alege o categorie pentru a vedea lucrările noastre', empty: 'Nicio lucrare adăugată încă.', loading: 'Se încarcă...', noPhotos: 'Nicio fotografie în această categorie.' },
-      photographer: { title: 'Fotograful', name: 'Ursachi Igor', brand: 'Creative Studio', bio: 'Sunt Igor, fondator al Creative Studio, și de peste un deceniu mă dedic artei fotografice. Cu expertiză în nunți, evenimente private, precum și sesiuni foto personale și de familie, transform fiecare moment într-o poveste vizuală captivantă.', location: 'Activează în Chișinău; disponibil să călătorească în întreaga Moldovă și Europa.' },
+      photographer: { title: 'Fotograf', name: 'Ursachi Igor', brand: 'Creative Studio', bio: 'Sunt Igor, fondator al Creative Studio, și de peste un deceniu mă dedic artei fotografice. Cu expertiză în nunți, evenimente private, precum și sesiuni foto personale și de familie, transform fiecare moment într-o poveste vizuală captivantă.', location: 'Activează în Chișinău; disponibil să călătorească în întreaga Moldovă și Europa.' },
       services: { title: 'Pachete Disponibile', subtitle: 'Alege pachetul perfect pentru evenimentul tău', packages: [
         { name: 'Essential Story', price: '1.000 €', currency: 'de la', features: ['1 fotograf profesionist', 'Galerie online privată', 'Editare JPG profesională', 'Min. 800 foto editate', 'Livrare link + USB', 'Termen livrare: 5 luni'], notIncluded: ['Preview 48h'] },
         { name: 'Eternal Story', price: '1.300 €', currency: 'de la', features: ['Fotograf + asistent', 'Preview 48h', 'Min. 1.000 foto editate', 'Termen livrare: 3 luni'], notIncluded: ['Album foto premium'] },
@@ -147,16 +147,28 @@ export default function Home() {
         {/* ====== ШАПКА С ЛОГОТИПОМ ПО ЦЕНТРУ ====== */}
         <nav className="fixed top-0 left-0 w-full z-50 bg-white/95 backdrop-blur border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Верхняя строка — логотип по центру */}
-            <div className="flex justify-center items-center py-3">
+            {/* Верхняя строка — логотип по центру, язык/бургер справа */}
+            <div className="relative flex justify-center items-center py-3">
               <a href="#" className="flex items-center">
                 <Image src="/logo.png" alt="Creative Studio" width={150} height={50} className="h-12 w-auto" priority />
               </a>
+
+              {/* Переключатель языка — только на десктопе */}
+              <div className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 items-center bg-gray-100 rounded-full p-1">
+                <button onClick={() => changeLanguage('ro')} className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${language === 'ro' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}>RO</button>
+                <button onClick={() => changeLanguage('en')} className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${language === 'en' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}>EN</button>
+              </div>
+
+              {/* Бургер — только на мобильном */}
+              <button onClick={() => setMenuOpen(true)} className="md:hidden absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-md text-gray-900 hover:text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+              </button>
             </div>
 
-            {/* Нижняя строка — меню по центру + язык справа */}
-            <div className="relative flex justify-center items-center pb-3">
-              {/* Меню по центру */}
+            {/* Нижняя строка — меню по центру, только на десктопе */}
+            <div className="hidden md:flex justify-center items-center pb-3">
               <ul className="flex gap-8 list-none whitespace-nowrap">
                 <li className="relative">
                   <button
@@ -169,7 +181,6 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                     </svg>
                   </button>
-                  {/* Dropdown */}
                   {galleryOpen && (
                     <div
                       onMouseLeave={() => setGalleryOpen(false)}
@@ -190,19 +201,6 @@ export default function Home() {
                 <li><button onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })} className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">{currentLang.nav.contacte}</button></li>
                 <li><button onClick={() => document.getElementById('despre')?.scrollIntoView({ behavior: 'smooth' })} className="text-sm uppercase tracking-wide text-gray-900 hover:text-blue-600 font-medium">{currentLang.nav.despre}</button></li>
               </ul>
-
-              {/* Переключатель языка — справа */}
-              <div className="absolute right-0 top-0 hidden md:flex items-center bg-gray-100 rounded-full p-1 transition-all duration-300">
-                <button onClick={() => changeLanguage('ro')} className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${language === 'ro' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}>RO</button>
-                <button onClick={() => changeLanguage('en')} className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${language === 'en' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}>EN</button>
-              </div>
-
-              {/* Бургер для мобильного */}
-              <button onClick={() => setMenuOpen(true)} className="md:hidden absolute right-0 top-0 p-2 rounded-md text-gray-900 hover:text-blue-600">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                </svg>
-              </button>
             </div>
           </div>
         </nav>
@@ -386,14 +384,14 @@ export default function Home() {
           </div>
 
           {/* ====== INSTANT-SELFIE (в стиле других пакетов) ====== */}
-          <div className="mt-8 bg-gray-50 rounded-2xl shadow-lg border border-gray-200 p-8 max-w-3xl mx-auto">
-            <h3 className="text-xl font-bold mb-2">{currentLang.instantSelfie.title}</h3>
-            <p className="text-gray-500 text-sm mb-6">{currentLang.instantSelfie.subtitle}</p>
-            <ul className="text-left text-gray-600 space-y-3 text-sm mb-6">
+          <div className="mt-8 max-w-sm mx-auto bg-gray-50 rounded-2xl shadow-lg border border-gray-200 p-8">
+            <h3 className="text-xl font-bold mb-2 text-center">{currentLang.instantSelfie.title}</h3>
+            <p className="text-gray-500 text-sm mb-6 text-center">{currentLang.instantSelfie.subtitle}</p>
+            <ul className="text-left space-y-3 text-sm mb-6">
               {currentLang.instantSelfie.options.map((opt, idx) => (
                 <li key={idx} className="flex justify-between items-center border-b border-gray-200 pb-3 last:border-0 last:pb-0">
-                  <span className="font-medium">{opt.name}</span>
-                  <span className="font-bold text-blue-500 text-lg">{opt.price}</span>
+                  <span className="text-gray-700 font-medium">{opt.name}</span>
+                  <span className="text-2xl font-bold text-gray-800">{opt.price}</span>
                 </li>
               ))}
             </ul>
