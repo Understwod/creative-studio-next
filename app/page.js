@@ -385,19 +385,21 @@ export default function Home() {
             ))}
           </div>
 
-          {/* ====== INSTANT-SELFIE (широкая карточка) ====== */}
-          <div className="mt-12 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl shadow-xl border-2 border-blue-200 p-8 max-w-3xl mx-auto">
-            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{currentLang.instantSelfie.title}</h3>
-            <p className="text-gray-500 mb-6">{currentLang.instantSelfie.subtitle}</p>
-            <div className="space-y-4">
+          {/* ====== INSTANT-SELFIE (в стиле других пакетов) ====== */}
+          <div className="mt-8 bg-gray-50 rounded-2xl shadow-lg border border-gray-200 p-8 max-w-3xl mx-auto">
+            <h3 className="text-xl font-bold mb-2">{currentLang.instantSelfie.title}</h3>
+            <p className="text-gray-500 text-sm mb-6">{currentLang.instantSelfie.subtitle}</p>
+            <ul className="text-left text-gray-600 space-y-3 text-sm mb-6">
               {currentLang.instantSelfie.options.map((opt, idx) => (
-                <div key={idx} className="flex justify-between items-center bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                  <span className="font-semibold text-gray-800 text-lg">{opt.name}</span>
-                  <span className="text-2xl font-bold text-blue-600">{opt.price}</span>
-                </div>
+                <li key={idx} className="flex justify-between items-center border-b border-gray-200 pb-3 last:border-0 last:pb-0">
+                  <span className="font-medium">{opt.name}</span>
+                  <span className="font-bold text-blue-500 text-lg">{opt.price}</span>
+                </li>
               ))}
-            </div>
-            <a href="#contact" className="block mt-6 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-full font-medium text-center transition">{currentLang.nav.contacte}</a>
+            </ul>
+            <a href="#contact" className="block bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-full font-medium text-center transition">
+              {currentLang.nav.contacte}
+            </a>
           </div>
         </section>
 
