@@ -25,7 +25,7 @@ export default function Home() {
       categories: { nunti: 'Nunți', cununie: 'Cununie', botez: 'Botez', fotosesii: 'Fotosesii' },
       despre: { title: 'Despre noi', subtitle: 'De peste 5 ani creăm amintiri de neuitat pentru cupluri din Moldova și România.', stats: [{ title: 'Experiență', text: 'Peste 300 de nunți filmate.' }, { title: 'Stil unic', text: 'Luminos, natural, emoționant.' }, { title: 'Termene rapide', text: 'Fotografii gata în 2 luni' }] },
       gallery: { title: 'Galerie', subtitle: 'Alege o categorie pentru a vedea lucrările noastre', empty: 'Nicio lucrare adăugată încă.', loading: 'Se încarcă...', noPhotos: 'Nicio fotografie în această categorie.' },
-      photographer: { title: 'Fotograful', name: 'Ursachi Igor', brand: 'Creative Studio', bio: 'Sunt Igor, fondator al Creative Studio, și de peste un deceniu mă dedic artei fotografice. Cu expertiză în nunți, evenimente private, precum și sesiuni foto personale și de familie, transform fiecare moment într-o poveste vizuală captivantă.', location: 'Activează în Chișinău; disponibil să călătorească în întreaga Moldovă și Europa.' },
+      photographer: { title: 'Fotograf', name: 'Ursachi Igor', brand: 'Creative Studio', bio: 'Sunt Igor, fondator al Creative Studio, și de peste un deceniu mă dedic artei fotografice. Cu expertiză în nunți, evenimente private, precum și sesiuni foto personale și de familie, transform fiecare moment într-o poveste vizuală captivantă.', location: 'Activez în Chișinău; disponibil să călătorească în întreaga Moldovă și Europa.' },
       services: { title: 'Pachete Disponibile', subtitle: 'Alege pachetul perfect pentru evenimentul tău', packages: [
         { name: 'Essential Story', price: '1.000 €', currency: 'de la', features: ['1 fotograf profesionist', 'Galerie online privată', 'Editare JPG profesională', 'Min. 800 foto editate', 'Livrare link + USB', 'Termen livrare: 5 luni'], notIncluded: ['Preview 48h'] },
         { name: 'Eternal Story', price: '1.300 €', currency: 'de la', features: ['Fotograf + asistent', 'Preview 48h', 'Min. 1.000 foto editate', 'Termen livrare: 3 luni'], notIncluded: ['Album foto premium'] },
@@ -314,11 +314,34 @@ export default function Home() {
 
       {/* Лайтбокс */}
       {lightboxOpen && (
-        <div className="fixed inset-0 bg-white z-[9999] flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
-          <button className="absolute top-4 right-4 text-black text-4xl hover:text-gray-600 transition z-10" onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}>&times;</button>
-          <button className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); prevImage(); }}>‹</button>
-          <Image src={photos[currentPhotoIndex].image_url} alt={photos[currentPhotoIndex].caption || 'Fotografie mărită'} width={1600} height={2000} className="max-w-[95%] max-h-[95%] w-auto h-auto object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
-          <button className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gray-200 text-black text-3xl p-3 rounded-full hover:bg-gray-300 transition" onClick={(e) => { e.stopPropagation(); nextImage(); }}>›</button>
+        <div className="fixed inset-0 bg-black z-[9999] flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
+          <button
+            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 transition z-20 w-12 h-12 flex items-center justify-center"
+            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+            aria-label="Închide"
+          >
+            &times;
+          </button>
+          <button
+            className="absolute top-1/2 left-2 md:left-4 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white text-3xl p-2 md:p-3 rounded-full transition z-20"
+            onClick={(e) => { e.stopPropagation(); prevImage(); }}
+            aria-label="Anterior"
+          >
+            ‹
+          </button>
+          <img
+            src={photos[currentPhotoIndex].image_url}
+            alt={photos[currentPhotoIndex].caption || 'Fotografie mărită'}
+            className="w-full h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            className="absolute top-1/2 right-2 md:right-4 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white text-3xl p-2 md:p-3 rounded-full transition z-20"
+            onClick={(e) => { e.stopPropagation(); nextImage(); }}
+            aria-label="Următor"
+          >
+            ›
+          </button>
         </div>
       )}
 
