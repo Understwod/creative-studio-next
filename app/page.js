@@ -23,7 +23,7 @@ export default function Home() {
     ro: {
       nav: { galerie: 'Galerie', contacte: 'Contacte', despre: 'Despre noi' },
       categories: { nunti: 'Nunți', cununie: 'Cununie', botez: 'Botez', fotosesii: 'Fotosesii' },
-      despre: { title: 'Despre noi', subtitle: 'De peste 5 ani creăm amintiri de neuitat pentru cupluri din Moldova și România.', stats: [{ title: 'Experiență', text: 'Peste 300 de nunți filmate' }, { title: 'Stil unic', text: 'Luminos, natural, emoționant' }, { title: 'Termene rapide', text: 'Fotografii gata în 2 luni' }] },
+      despre: { title: 'Despre noi', subtitle: 'De peste 5 ani creăm amintiri de neuitat pentru cupluri din Moldova și România.', stats: [{ title: 'Experiență', text: 'Peste 300 de nunți filmate.' }, { title: 'Stil unic', text: 'Luminos, natural, emoționant.' }, { title: 'Termene rapide', text: 'Fotografii gata în 2 luni' }] },
       gallery: { title: 'Galerie', subtitle: 'Alege o categorie pentru a vedea lucrările noastre', empty: 'Nicio lucrare adăugată încă.', loading: 'Se încarcă...', noPhotos: 'Nicio fotografie în această categorie.' },
       photographer: { title: 'Fotograful', name: 'Ursachi Igor', brand: 'Creative Studio', bio: 'Sunt Igor, fondator al Creative Studio, și de peste un deceniu mă dedic artei fotografice. Cu expertiză în nunți, evenimente private, precum și sesiuni foto personale și de familie, transform fiecare moment într-o poveste vizuală captivantă.', location: 'Activează în Chișinău; disponibil să călătorească în întreaga Moldovă și Europa.' },
       services: { title: 'Pachete Disponibile', subtitle: 'Alege pachetul perfect pentru evenimentul tău', packages: [
@@ -68,9 +68,9 @@ export default function Home() {
     location: currentLang.photographer.location,
     phone: '069434361',
     email: 'creative.studio.mda@gmail.com',
-    instagram: 'https://www.instagram.com/creative.studio.photography',
+    instagram: 'https://www.instagram.com/creative.studio_photography',
     facebook: 'https://www.facebook.com/creativestudio.moldova',
-    tiktok: 'https://www.tiktok.com/@creativestudiomoldova',
+    tiktok: 'https://www.tiktok.com/@creative.studio.ph',
   };
 
   useEffect(() => {
