@@ -68,9 +68,9 @@ export default function Home() {
     location: currentLang.photographer.location,
     phone: '069434361',
     email: 'creative.studio.mda@gmail.com',
-    instagram: 'https://www.instagram.com/creative.studio.photography',
+    instagram: 'https://www.instagram.com/creative.studio_photography',
     facebook: 'https://www.facebook.com/creativestudio.moldova',
-    tiktok: 'https://www.tiktok.com/@creativestudiomoldova',
+    tiktok: 'https://www.tiktok.com/@creative.studio.ph',
   };
 
   // Загрузка данных
@@ -148,26 +148,32 @@ export default function Home() {
       <nav className="fixed top-0 left-0 w-full z-50 bg-white/95 backdrop-blur border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Верхняя строка — логотип по центру */}
-          <div className="relative flex justify-center items-center py-2">
-            <a href="#" className="flex items-center">
-              <Image src="/logo.png" alt="Creative Studio" width={150} height={50} className="h-10 md:h-12 w-auto" priority />
-            </a>
+          <div className="relative flex items-center py-2">
+            {/* Пустой блок слева — для баланса (на десктопе не нужен) */}
+            <div className="md:hidden w-10 h-10 flex-shrink-0"></div>
+
+            {/* Логотип — по центру */}
+            <div className="flex-1 flex justify-center">
+              <a href="#" className="flex items-center">
+                <Image src="/logo.png" alt="Creative Studio" width={150} height={50} className="h-10 md:h-12 w-auto" priority />
+              </a>
+            </div>
 
             {/* Язык — только на десктопе */}
-            <div className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 items-center bg-gray-100 rounded-full p-1">
+            <div className="hidden md:flex items-center bg-gray-100 rounded-full p-1 mr-12">
               <button onClick={() => changeLanguage('ro')} className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${language === 'ro' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}>RO</button>
               <button onClick={() => changeLanguage('en')} className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${language === 'en' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:text-gray-900'}`}>EN</button>
             </div>
 
-            {/* Бургер — ТОЛЬКО на мобильном */}
-            <button onClick={() => setMenuOpen(true)} className="md:hidden absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-md text-gray-900 hover:text-blue-600">
+            {/* Бургер — только на мобильном (справа) */}
+            <button onClick={() => setMenuOpen(true)} className="md:hidden w-10 h-10 flex items-center justify-center rounded-md text-gray-900 hover:text-blue-600 flex-shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
             </button>
           </div>
 
-          {/* Нижняя строка — меню видно всегда (и на мобильном, и на десктопе) */}
+          {/* Нижняя строка — меню */}
           <div className="flex justify-center items-center pb-2 md:pb-3">
             <ul className="flex gap-4 md:gap-8 list-none whitespace-nowrap">
               <li className="relative">
