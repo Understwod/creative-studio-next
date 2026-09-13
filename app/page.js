@@ -295,7 +295,7 @@ export default function Home() {
         )}
       </section>
 
-      {/* Открытое мероприятие — по одному фото в столбик на мобильном */}
+      {/* Открытое мероприятие */}
       {selectedEvent && (
         <div className="fixed inset-0 bg-white z-[9998] overflow-y-auto">
           <div className="sticky top-0 bg-white/95 backdrop-blur z-10 flex justify-between items-center p-6 border-b border-gray-200">
@@ -303,11 +303,22 @@ export default function Home() {
             <button onClick={closeEvent} className="text-black text-3xl">&times;</button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-            {loadingEvent ? <p className="text-gray-600">{currentLang.gallery.loading}</p> : photos.length === 0 ? <p className="text-gray-600">{currentLang.gallery.noPhotos}</p> : photos.map((photo, i) => (
-              <div key={photo.id} className="cursor-pointer aspect-[4/5] overflow-hidden rounded-lg" onClick={() => openLightbox(i)}>
-                <Image src={photo.image_url} alt={photo.caption || 'Fotografie'} width={600} height={750} className="w-full h-full object-cover" loading="lazy" />
-              </div>
-            ))}
+            {loadingEvent ? (
+              <p className="text-gray-600">{currentLang.gallery.loading}</p>
+            ) : photos.length === 0 ? (
+              <p className="text-gray-600">{currentLang.gallery.noPhotos}</p>
+            ) : (
+              photos.map((photo, i) => (
+                <div key={photo.id} className="cursor-pointer overflow-hidden rounded-lg" onClick={() => openLightbox(i)}>
+                  <img
+                    src={photo.image_url}
+                    alt={photo.caption || 'Fotografie'}
+                    className="w-full h-auto"
+                    loading="lazy"
+                  />
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
